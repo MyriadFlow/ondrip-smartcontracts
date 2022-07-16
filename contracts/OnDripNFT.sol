@@ -11,19 +11,12 @@ import "base64-sol/base64.sol";
 contract OnDripNFT is ERC721, ERC721URIStorage {
     using Counters for Counters.Counter;
 
-    uint public s_mintPrice; //delete this possibly,
     bool public s_mintLive;
-
-    //IMAGES WILL ALSO NEED JSON FOR TRAITS ON OPENSEA
-    string private s_netflixIMGURI;
-    string private s_spotifyIMGURI;
 
     address payable public s_contractOwner;
  
     uint256 public immutable maxInterval = 15768000; //six months
     uint256 public immutable minInterval = 10800; //three hours
-
-    string[] internal s_imgTokenUris;
 
     enum CardValid {
         Active,
@@ -32,8 +25,8 @@ contract OnDripNFT is ERC721, ERC721URIStorage {
 
     struct cardAttributes {
         address payable accountOwner;
-        string vendor;
-        string description; //this will be metadata
+        string description; 
+        string imgURI;
         uint256 rateAmount;
         uint256 renewalFee;
         uint256 subscriptionTime;
@@ -50,18 +43,16 @@ contract OnDripNFT is ERC721, ERC721URIStorage {
        
         string memory  _name,
         string memory _symbol,
-        string[2] memory _imgTokenUris, //come back to URI when I know more about what we are doing
         address payable _owner
  
     ) ERC721(_name,  _symbol) {
         s_contractOwner = _owner;
-        s_imgTokenUris = _imgTokenUris;
     }
  
     //ADD MORE EVENTS 
-    event MintedSubs(address indexed _accountOwner, uint _id, string _description, uint _rateAmount);
+    event AccountMinted(address indexed _accountOwner, uint _id, string _description, uint _rateAmount, uint __renewalFee);
     event OwnershipTransferred(address indexed _from, address indexed _to);
-    event OnGoingSubscriptions(address indexed _renter, uint _tokenID, uint _newTime, address indexed _receiver);
+    event Subscriptions(address indexed _renter, uint _tokenID, uint _newTime, address indexed _receiver);
     event FundsWithdrawn(address indexed _from, address indexed _to);
 
     //Modifiers
@@ -80,19 +71,16 @@ contract OnDripNFT is ERC721, ERC721URIStorage {
         _;
     }
  
-    //we could make these traits on chain 
     function mint(
 
-        string memory _vendor,
+        string memory _vendorURI,
         string memory _description,
         uint256 _rateAmount,
         uint256 _renewalFee, 
         bytes32 _credentials
 
-    ) external payable {
+    ) external {
         
-        //MIGHT NOT NEED THIS OR PAYABLE
-        require(msg.value >= s_mintPrice, "insufficient funds");
         require(s_mintLive, "Mint isn't live");
  
         uint256 tokenId = _tokenIdCounter.current();
@@ -103,8 +91,8 @@ contract OnDripNFT is ERC721, ERC721URIStorage {
         s_cardAttributes[tokenId] = cardAttributes ({
  
             accountOwner: payable(msg.sender),
-            vendor: _vendor,
             description: _description,
+            imgURI: _vendorURI, //IPFS HASH
             rateAmount: _rateAmount, 
             renewalFee: _renewalFee, 
             credentials: _credentials, 
@@ -112,16 +100,16 @@ contract OnDripNFT is ERC721, ERC721URIStorage {
             cardValid: CardValid.Inactive
             });
  
-        _setTokenURI(tokenId, tokenURI(tokenId));
-        emit MintedSubs(msg.sender, tokenId, _description, _rateAmount);  
+        _setTokenURI(tokenId, tokenURI(tokenId)); //_vendorURI
+        emit AccountMinted(msg.sender, tokenId, _description, _rateAmount, _renewalFee);  
 
     }
 
-    function setMint( uint256 _amount, bool _mintLive) external onlyOwner {
-       s_mintPrice = _amount;
+    function setMint( bool _mintLive) public onlyOwner {
        s_mintLive = _mintLive;
     }
 
+    //NON FUNCTIONAL MIGHT LOOK AT PAYMENT SPLITTER
     function withdrawFunds(uint256 _amount) onlyOwner external payable 
     {
         require(_amount <= address(this).balance, "Contract does not have enough funds to withdraw");
@@ -155,10 +143,10 @@ contract OnDripNFT is ERC721, ERC721URIStorage {
         require(_amount == s_cardAttributes[_tokenID].rateAmount * 3, "3 hour minimum");
 
         address currentSub = ownerOf(_tokenID);
-        uint256 hour = _amount / s_cardAttributes[_tokenID].rateAmount; //amount divided rate price which gets you one hour
+        uint256 hour = _amount / s_cardAttributes[_tokenID].rateAmount; 
         uint256 newTime = (hour * 60) * 60;
 
-        emit OnGoingSubscriptions(currentSub, _tokenID, hour, s_cardAttributes[_tokenID].accountOwner);
+        emit Subscriptions(currentSub, _tokenID, hour, s_cardAttributes[_tokenID].accountOwner);
 
         return newTime;
        
@@ -174,36 +162,54 @@ contract OnDripNFT is ERC721, ERC721URIStorage {
         require(success, "Transfer failed");
 
         s_cardAttributes[_tokenID].cardValid = CardValid.Active;
-        s_cardAttributes[_tokenID].subscriptionTime += block.timestamp + 10800; //renewall sets it for 3 hour flat //do we have a custom renewl? 
+        s_cardAttributes[_tokenID].subscriptionTime += block.timestamp + 10800; 
 
-        emit OnGoingSubscriptions(msg.sender, _tokenID, 0, s_cardAttributes[_tokenID].accountOwner);
-        //possibly call a function like top off right here
+        emit Subscriptions(msg.sender, _tokenID, 0, s_cardAttributes[_tokenID].accountOwner);
 
     }
-
-    //MAY NOT NEED -- MIGHT BE DELETED 
-    function killSwitch(uint256 _tokenId) external
-    {
-        require(s_cardAttributes[_tokenId].accountOwner == msg.sender, "you are not the account owner" ); 
-        require(s_cardAttributes[_tokenId].cardValid == CardValid.Inactive, "card is still in use");
-   
-            _burn(_tokenId);
-            delete s_cardAttributes[_tokenId];
-    }
-
 
     function _baseURI() internal pure override returns (string memory) {
         return "data:application/json;base64,";
     }
 
-    //On Chain Token URI - switch to IPFS Or FILE COIN
+    //string memory _vendorURI
     function tokenURI(uint256 _tokenId)
         public
         view
         override(ERC721, ERC721URIStorage)
         returns (string memory)
     {
+        require(_exists(_tokenId),"ERC721Metadata: URI query for nonexistent token");
         
+        cardAttributes memory cardAttribute = s_cardAttributes[_tokenId];
+        string memory strRateAmount = Strings.toString(cardAttribute.rateAmount);
+        string memory imageURI = cardAttribute.imgURI;
+
+        return
+            string(
+                abi.encodePacked(
+                    _baseURI(),
+                    Base64.encode(
+                        bytes(
+                            abi.encodePacked(
+                                 '{"name":"',
+                                name(),
+                                " Membership",
+                                '", "description":"',
+                                cardAttribute.description,
+                                " Vendor",
+                                '", "image": "',
+                                imageURI,
+                                '", "attributes": [{"trait_type":"Rate Amount",',
+                                '"value":"',
+                                strRateAmount,
+                                '"}]}'
+                            )
+                        )
+                    )
+                )
+            );
+
     }
 
     function getTokenCredentials(uint256 _tokenID) external getTokeValid(_tokenID) view returns (bytes32) {
@@ -215,11 +221,6 @@ contract OnDripNFT is ERC721, ERC721URIStorage {
         
     }
 
-    function getTotalSupply() external view returns (uint256) {
-        uint256 supply = _tokenIdCounter.current();
-        return supply;
-    }
- 
     function _burn (uint256 tokenId)
         internal
         override(ERC721, ERC721URIStorage)
@@ -228,30 +229,9 @@ contract OnDripNFT is ERC721, ERC721URIStorage {
  
     }
  
-    //Not sure if this is actually needed
-     function _transfer(
-        address from,
-        address to,
-        uint256 tokenId
-    ) internal virtual override(ERC721) {
-       
-        super._beforeTokenTransfer(from, to, tokenId);
-    }
- 
-    //TESTING
     function balanceOfContract() external view  returns (uint256) {
         return address(this).balance;
     }
- 
-    //TESTING
-    function getcurrentTimeStamp() external view returns (uint256) {
-        return block.timestamp;
-    }
 
-    //TESTING - get tokenUri function 
-    function getTokenUri(uint256 _tokenId) external view returns (string memory){
-        string memory _tokenURI = tokenURI(_tokenId);
-        return _tokenURI;
-    }
 
 }
