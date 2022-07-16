@@ -2,26 +2,25 @@
 pragma solidity >=0.8.0 <0.9.0;
  
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import "@openzeppelin/contracts/token/common/ERC2981.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "base64-sol/base64.sol";
 
  error Payments__Failed();
  
-contract OnDripNFT is ERC721, ERC721URIStorage {
+contract OnDripNFT is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerable {
     using Counters for Counters.Counter;
 
     bool public s_mintLive;
+    uint96 s_royaltyFeeBips;
 
     address payable public s_contractOwner;
+    address s_royaltyReciever; //who gets the royalties its mapped to token id account owners when their token is traded
  
     uint256 public immutable maxInterval = 15768000; //six months
     uint256 public immutable minInterval = 10800; //three hours
-
-    enum CardValid {
-        Active,
-        Inactive
-    }  
 
     struct cardAttributes {
         address payable accountOwner;
@@ -31,11 +30,10 @@ contract OnDripNFT is ERC721, ERC721URIStorage {
         uint256 renewalFee;
         uint256 subscriptionTime;
         bytes32 credentials;
-        CardValid cardValid;
+        bool cardValid;
     }
  
-    //DAO card mapped to a token ID
-    mapping (uint256 => cardAttributes) private s_cardAttributes;
+    mapping (uint256 => cardAttributes) public s_cardAttributes;
 
     Counters.Counter private _tokenIdCounter;
  
@@ -43,26 +41,32 @@ contract OnDripNFT is ERC721, ERC721URIStorage {
        
         string memory  _name,
         string memory _symbol,
-        address payable _owner
+        address payable _owner,
+        uint96 _royaltyFeeBips
  
     ) ERC721(_name,  _symbol) {
         s_contractOwner = _owner;
+        s_royaltyFeeBips = _royaltyFeeBips;
     }
  
-    //ADD MORE EVENTS 
-    event AccountMinted(address indexed _accountOwner, uint _id, string _description, uint _rateAmount, uint __renewalFee);
+    //EVENTS 
+    event AccountMinted(address indexed _accountOwner, uint _id, string _description, uint _rateAmount, uint __renewalFee, bool _active);
     event OwnershipTransferred(address indexed _from, address indexed _to);
-    event Subscriptions(address indexed _renter, uint _tokenID, uint _newTime, address indexed _receiver);
+    event SubscriptionStatus(address indexed _renter, uint _tokenID, address indexed _receiver, bool _active);
+    event SubscriptionUpdate(address indexed _renter, uint _tokenID, uint _hour, address indexed _receiver, uint _amount); //prob can only do time ...
     event FundsWithdrawn(address indexed _from, address indexed _to);
 
-    //Modifiers
+    //MODIFIERS
     modifier getTokeValid(uint256 _tokenID) {
+        address renter = ownerOf(_tokenID);
         if(s_cardAttributes[_tokenID].subscriptionTime <= block.timestamp){
-            s_cardAttributes[_tokenID].cardValid == CardValid.Inactive;
+            s_cardAttributes[_tokenID].cardValid = false;
         }
-        else {
-            s_cardAttributes[_tokenID].cardValid == CardValid.Active;
+        else if(s_cardAttributes[_tokenID].subscriptionTime >= block.timestamp) {
+            s_cardAttributes[_tokenID].cardValid = true;
         }
+
+        emit SubscriptionStatus(renter, _tokenID, s_cardAttributes[_tokenID].accountOwner, s_cardAttributes[_tokenID].cardValid);
         _;
     }
 
@@ -97,11 +101,11 @@ contract OnDripNFT is ERC721, ERC721URIStorage {
             renewalFee: _renewalFee, 
             credentials: _credentials, 
             subscriptionTime: block.timestamp,
-            cardValid: CardValid.Inactive
+            cardValid: false
             });
  
-        _setTokenURI(tokenId, tokenURI(tokenId)); //_vendorURI
-        emit AccountMinted(msg.sender, tokenId, _description, _rateAmount, _renewalFee);  
+        _setTokenURI(tokenId, tokenURI(tokenId)); 
+        emit AccountMinted(msg.sender, tokenId, _description, _rateAmount, _renewalFee, false);  
 
     }
 
@@ -121,10 +125,11 @@ contract OnDripNFT is ERC721, ERC721URIStorage {
 
     function topUp(uint256 _tokenID) external getTokeValid(_tokenID) payable {
         require(ownerOf(_tokenID) == msg.sender, "not owner");
-        require(s_cardAttributes[_tokenID].cardValid == CardValid.Active, "Card not active");
+        require(s_cardAttributes[_tokenID].cardValid == true, "Card not active");
 
-        uint256 newTime =  calculateSubscriptionTime(msg.value, _tokenID);
-	    if(s_cardAttributes[_tokenID].subscriptionTime > minInterval && s_cardAttributes[_tokenID].subscriptionTime < maxInterval) {
+        uint256 newTime = calculateSubscriptionTime(msg.value, _tokenID);
+
+	    if(newTime >= minInterval && newTime <= maxInterval) {
 
             s_cardAttributes[_tokenID].subscriptionTime += block.timestamp + newTime;
             address receiver = s_cardAttributes[_tokenID].accountOwner; 
@@ -140,13 +145,13 @@ contract OnDripNFT is ERC721, ERC721URIStorage {
 
     function calculateSubscriptionTime(uint256 _amount, uint256 _tokenID) internal returns (uint256) {
         require(_amount >= s_cardAttributes[_tokenID].rateAmount, "too little payment");
-        require(_amount == s_cardAttributes[_tokenID].rateAmount * 3, "3 hour minimum");
+        require(_amount >= s_cardAttributes[_tokenID].rateAmount * 3, "3 hour minimum");
 
         address currentSub = ownerOf(_tokenID);
         uint256 hour = _amount / s_cardAttributes[_tokenID].rateAmount; 
         uint256 newTime = (hour * 60) * 60;
 
-        emit Subscriptions(currentSub, _tokenID, hour, s_cardAttributes[_tokenID].accountOwner);
+        emit SubscriptionUpdate(currentSub, _tokenID, hour, s_cardAttributes[_tokenID].accountOwner, _amount);
 
         return newTime;
        
@@ -160,19 +165,22 @@ contract OnDripNFT is ERC721, ERC721URIStorage {
         address receiver = s_cardAttributes[_tokenID].accountOwner; 
         (bool success, ) = receiver.call{value: msg.value}("");
         require(success, "Transfer failed");
-
-        s_cardAttributes[_tokenID].cardValid = CardValid.Active;
+        s_cardAttributes[_tokenID].cardValid = true;
         s_cardAttributes[_tokenID].subscriptionTime += block.timestamp + 10800; 
 
-        emit Subscriptions(msg.sender, _tokenID, 0, s_cardAttributes[_tokenID].accountOwner);
+        emit SubscriptionStatus(msg.sender, _tokenID, s_cardAttributes[_tokenID].accountOwner, s_cardAttributes[_tokenID].cardValid);
 
+    }
+
+    //add token ID so its different accross tokenIDs
+    function calculateRoyalty(uint256 _salePrice) view public returns (uint256) {
+        return (_salePrice / 10000) * s_royaltyFeeBips;
     }
 
     function _baseURI() internal pure override returns (string memory) {
         return "data:application/json;base64,";
     }
 
-    //string memory _vendorURI
     function tokenURI(uint256 _tokenId)
         public
         view
@@ -194,7 +202,7 @@ contract OnDripNFT is ERC721, ERC721URIStorage {
                             abi.encodePacked(
                                  '{"name":"',
                                 name(),
-                                " Membership",
+                                " Description ",
                                 '", "description":"',
                                 cardAttribute.description,
                                 " Vendor",
@@ -212,11 +220,27 @@ contract OnDripNFT is ERC721, ERC721URIStorage {
 
     }
 
-    function getTokenCredentials(uint256 _tokenID) external getTokeValid(_tokenID) view returns (bytes32) {
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        override(ERC721, ERC721Enumerable, ERC2981)
+        returns (bool)
+    {
+        return super.supportsInterface(interfaceId);
+    }
+
+    function _beforeTokenTransfer(address from, address to, uint256 tokenId)
+        internal
+        override(ERC721, ERC721Enumerable)
+    {
+        super._beforeTokenTransfer(from, to, tokenId);
+    }
+
+    function getTokenCredentials(uint256 _tokenID) external getTokeValid(_tokenID) returns (bytes32) {
         require(ownerOf(_tokenID) == msg.sender, "not owner");
         require(s_cardAttributes[_tokenID].subscriptionTime > block.timestamp);
-        require(s_cardAttributes[_tokenID].cardValid == CardValid.Active, "Card not active");
-
+        require(s_cardAttributes[_tokenID].cardValid == true, "Card not active");
+    
         return s_cardAttributes[_tokenID].credentials;
         
     }
@@ -233,5 +257,6 @@ contract OnDripNFT is ERC721, ERC721URIStorage {
         return address(this).balance;
     }
 
+ 
 
 }
