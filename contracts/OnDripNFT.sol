@@ -104,6 +104,7 @@ contract OnDripNFT is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerable {
             cardValid: false
             });
  
+        _setTokenRoyalty(tokenId, msg.sender, s_royaltyFeeBips);//should user set their own royalty
         _setTokenURI(tokenId, tokenURI(tokenId)); 
         emit AccountMinted(msg.sender, tokenId, _description, _rateAmount, _renewalFee, false);  
 
