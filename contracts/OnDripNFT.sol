@@ -2,45 +2,36 @@
 pragma solidity >=0.8.0 <0.9.0;
  
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import "@openzeppelin/contracts/token/common/ERC2981.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
-import "base64-sol/base64.sol";
+import "@openzeppelin/contracts/utils/Base64.sol";
 
- error Payments__Failed();
+error Payments__Failed();
  
-contract OnDripNFT is ERC721, ERC721URIStorage {
+contract OnDripNFT is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerable {
     using Counters for Counters.Counter;
 
-    uint public s_mintPrice; //delete this possibly,
     bool public s_mintLive;
-
-    //IMAGES WILL ALSO NEED JSON FOR TRAITS ON OPENSEA
-    string private s_netflixIMGURI;
-    string private s_spotifyIMGURI;
+    uint96 s_royaltyFeeBips;
 
     address payable public s_contractOwner;
  
     uint256 public immutable maxInterval = 15768000; //six months
     uint256 public immutable minInterval = 10800; //three hours
 
-    enum CardValid {
-        Active,
-        Inactive
-    }
-
     struct cardAttributes {
         address payable accountOwner;
-        string vendor;
-        string description; //this will be metadata
-        string imgURI; //possibly status icon
+        string description; 
+        string imgURI;
         uint256 rateAmount;
         uint256 renewalFee;
         uint256 subscriptionTime;
         bytes32 credentials;
-        CardValid cardValid;
+        bool cardValid;
     }
  
-    //DAO card mapped to a token ID
     mapping (uint256 => cardAttributes) private s_cardAttributes;
 
     Counters.Counter private _tokenIdCounter;
@@ -49,89 +40,82 @@ contract OnDripNFT is ERC721, ERC721URIStorage {
        
         string memory  _name,
         string memory _symbol,
-        string memory _spotIMG,
-        string memory _netIMG,
-        address payable _owner
+        address payable _owner,
+        uint96 _royaltyFeeBips
  
     ) ERC721(_name,  _symbol) {
         s_contractOwner = _owner;
-        s_netflixIMGURI = svgToImageURI(_spotIMG);
-        s_spotifyIMGURI = svgToImageURI(_netIMG);
-
+        s_royaltyFeeBips = _royaltyFeeBips;
     }
  
-    //ADD MORE EVENTS 
-    event MintedSubs(address indexed _accountOwner, uint _id, string _description, uint _rateAmount);
+    //EVENTS 
+    event AccountMinted(address indexed _accountOwner, uint _id, string _description, uint _rateAmount, uint __renewalFee, bytes32 _credentials, bool _active);
     event OwnershipTransferred(address indexed _from, address indexed _to);
-    event OnGoingSubscriptions(address indexed _renter, uint _tokenID, uint _newTime, address indexed _receiver);
+    event SubscriptionStatus(address indexed _renter, uint _tokenID, address indexed _receiver, bool _active);
+    event SubscriptionUpdate(address indexed _renter, uint _tokenID, uint _hour, address indexed _receiver, uint _amount); //prob can only do time ...
     event FundsWithdrawn(address indexed _from, address indexed _to);
 
-    //Modifiers
+    //OPTIONAL MODIFIER - When Called Pre Function It Checks On Time Expiry Of SUB  
     modifier getTokeValid(uint256 _tokenID) {
+        address renter = ownerOf(_tokenID);
         if(s_cardAttributes[_tokenID].subscriptionTime <= block.timestamp){
-            s_cardAttributes[_tokenID].cardValid == CardValid.Inactive;
+            s_cardAttributes[_tokenID].cardValid = false;
         }
-        else {
-            s_cardAttributes[_tokenID].cardValid == CardValid.Active;
+        else if(s_cardAttributes[_tokenID].subscriptionTime >= block.timestamp) {
+            s_cardAttributes[_tokenID].cardValid = true;
         }
+
+        emit SubscriptionStatus(renter, _tokenID, s_cardAttributes[_tokenID].accountOwner, s_cardAttributes[_tokenID].cardValid);
         _;
     }
 
+    //OPTIONAL MODIFIER
     modifier onlyOwner() {
         require(msg.sender==s_contractOwner);
         _;
     }
-
-    function svgToImageURI(string memory svg) public pure returns (string memory) {
- 
-        string memory baseURL = "data:image/svg+xml;base64,";
-        string memory svgBase64Encoded = Base64.encode(bytes(string(abi.encodePacked(svg))));
-        return string(abi.encodePacked(baseURL, svgBase64Encoded));
-    }
  
     function mint(
 
-        string memory _vendor,
+        string memory _vendorURI,
         string memory _description,
         uint256 _rateAmount,
         uint256 _renewalFee, 
-        bytes32 _credentials
+        bytes32 _credentials //HOW ARE CREDETIALS HANDLED
 
-    ) external payable {
+    ) external {
         
-        //MIGHT NOT NEED THIS OR PAYABLE
-        require(msg.value >= s_mintPrice, "insufficient funds");
-        require(s_mintLive, "Mint isn't live");
+        //require(s_mintLive, "Mint isn't live");
  
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
  
         _safeMint(msg.sender, tokenId);
-        string memory URIVender;
 
-            s_cardAttributes[tokenId] = cardAttributes ({
+        s_cardAttributes[tokenId] = cardAttributes ({
  
-                accountOwner: payable(msg.sender),
-                vendor: _vendor,
-                description: _description,
-                rateAmount: _rateAmount, 
-                renewalFee: _renewalFee, 
-                credentials: _credentials, 
-                imgURI: URIVender,
-                subscriptionTime: block.timestamp,
-                cardValid: CardValid.Inactive
+            accountOwner: payable(msg.sender),
+            description: _description,
+            imgURI: _vendorURI, //IPFS HASH
+            rateAmount: _rateAmount, 
+            renewalFee: _renewalFee, 
+            credentials: _credentials, 
+            subscriptionTime: block.timestamp,
+            cardValid: false
             });
  
-        _setTokenURI(tokenId, tokenURI(tokenId));
-        emit MintedSubs(msg.sender, tokenId, _description, _rateAmount);  
+        _setTokenRoyalty(tokenId, msg.sender, s_royaltyFeeBips); //USER MAY SET THIER OWN ROYALTY
+        _setTokenURI(tokenId, tokenURI(tokenId)); 
+        emit AccountMinted(msg.sender, tokenId, _description, _rateAmount, _renewalFee, _credentials, false);  
 
     }
 
-    function setMint( uint256 _amount, bool _mintLive) external onlyOwner {
-       s_mintPrice = _amount;
+    //SET MINT FOR ROLE ACCESS MINTING 
+    function setMint( bool _mintLive) public onlyOwner {
        s_mintLive = _mintLive;
     }
 
+    //NON FUNCTIONAL MIGHT LOOK AT PAYMENT SPLITTER
     function withdrawFunds(uint256 _amount) onlyOwner external payable 
     {
         require(_amount <= address(this).balance, "Contract does not have enough funds to withdraw");
@@ -141,12 +125,13 @@ contract OnDripNFT is ERC721, ERC721URIStorage {
         emit FundsWithdrawn(address(this), msg.sender);
     }
 
-    function topUp(uint256 _tokenID) external getTokeValid(_tokenID) payable {
+    function topUp(uint256 _tokenID) external payable {
         require(ownerOf(_tokenID) == msg.sender, "not owner");
-        require(s_cardAttributes[_tokenID].cardValid == CardValid.Active, "Card not active");
+        require(s_cardAttributes[_tokenID].cardValid == true, "Card not active");
 
-        uint256 newTime =  calculateSubscriptionTime(msg.value, _tokenID);
-	    if(s_cardAttributes[_tokenID].subscriptionTime > minInterval && s_cardAttributes[_tokenID].subscriptionTime < maxInterval) {
+        uint256 newTime = calculateSubscriptionTime(msg.value, _tokenID);
+
+	    if(newTime >= minInterval && newTime <= maxInterval) {
 
             s_cardAttributes[_tokenID].subscriptionTime += block.timestamp + newTime;
             address receiver = s_cardAttributes[_tokenID].accountOwner; 
@@ -162,13 +147,13 @@ contract OnDripNFT is ERC721, ERC721URIStorage {
 
     function calculateSubscriptionTime(uint256 _amount, uint256 _tokenID) internal returns (uint256) {
         require(_amount >= s_cardAttributes[_tokenID].rateAmount, "too little payment");
-        require(_amount == s_cardAttributes[_tokenID].rateAmount * 3, "3 hour minimum");
+        require(_amount >= s_cardAttributes[_tokenID].rateAmount * 3, "3 hour minimum");
 
         address currentSub = ownerOf(_tokenID);
         uint256 hour = _amount / s_cardAttributes[_tokenID].rateAmount; 
         uint256 newTime = (hour * 60) * 60;
 
-        emit OnGoingSubscriptions(currentSub, _tokenID, hour, s_cardAttributes[_tokenID].accountOwner);
+        emit SubscriptionUpdate(currentSub, _tokenID, hour, s_cardAttributes[_tokenID].accountOwner, _amount);
 
         return newTime;
        
@@ -182,36 +167,96 @@ contract OnDripNFT is ERC721, ERC721URIStorage {
         address receiver = s_cardAttributes[_tokenID].accountOwner; 
         (bool success, ) = receiver.call{value: msg.value}("");
         require(success, "Transfer failed");
+        s_cardAttributes[_tokenID].cardValid = true;
+        s_cardAttributes[_tokenID].subscriptionTime += block.timestamp + 10800; 
 
-        s_cardAttributes[_tokenID].cardValid = CardValid.Active;
-
-        emit OnGoingSubscriptions(msg.sender, _tokenID, 0, s_cardAttributes[_tokenID].accountOwner);
-
+        emit SubscriptionStatus(msg.sender, _tokenID, s_cardAttributes[_tokenID].accountOwner, s_cardAttributes[_tokenID].cardValid);
     }
 
-    //On Chain Token URI - switch to IPFS Or FILE COIN
     function tokenURI(uint256 _tokenId)
         public
         view
         override(ERC721, ERC721URIStorage)
         returns (string memory)
     {
+        require(_exists(_tokenId),"ERC721Metadata: URI query for nonexistent token");
+        
+        cardAttributes memory cardAttribute = s_cardAttributes[_tokenId];
+        string memory imageURI = cardAttribute.imgURI;
+        
+        bytes memory m1 = abi.encodePacked(
+            '{"name":"',
+            name(),
+            " Membership",
+            '", "description":"',
+            cardAttribute.description,
+            " Membership",
+            '", "image": "',
+             imageURI,
+            // adding policyHolder
+            '", "attributes": [{"trait_type":"Governance Score",',
+            '"value":"',
+            Strings.toString (10),
+            '"}]}'
+        );
+
+        return
+            string(
+                abi.encodePacked(
+                    "data:application/json;base64,",
+                    Base64.encode(bytes.concat(m1))
+                )
+            );
+    }
+
+    function accessToCredentials(uint256 _tokenID) public returns (bool access) {
+        if (s_cardAttributes[_tokenID].subscriptionTime > block.timestamp){
+            s_cardAttributes[_tokenID].cardValid = true;
+            return true;
+        }
+        else if (s_cardAttributes[_tokenID].subscriptionTime <= block.timestamp) {
+            s_cardAttributes[_tokenID].cardValid = false;
+            return false;
+        }
         
     }
 
-    function getTokenCredentials(uint256 _tokenID) external getTokeValid(_tokenID) view returns (bytes32) {
+    //GETTER FUNCTION IF NEEDED
+    function getTokenCredentials(uint256 _tokenID) public view returns (bytes32) {
         require(ownerOf(_tokenID) == msg.sender, "not owner");
         require(s_cardAttributes[_tokenID].subscriptionTime > block.timestamp);
-
+        require(s_cardAttributes[_tokenID].cardValid == true, "Card not active");
+    
         return s_cardAttributes[_tokenID].credentials;
         
     }
 
-    function getTotalSupply() external view returns (uint256) {
-        uint256 supply = _tokenIdCounter.current();
-        return supply;
+    //Possibly Functions For Encoding Or Decoding -- Might Change Password and Username To String  To String - Stringify
+    function encode(uint256 password, string memory username) external pure returns (bytes memory) {
+        return abi.encode(password, username);
     }
- 
+
+    //Possibly Functions For Encoding Or Decoding -- Might Change Password and Username To String  To String - Stringify
+    function decode (bytes calldata data) external pure returns (uint256 password, string memory username){
+        (password, username) = abi.decode(data, (uint256, string));
+    }
+
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        override(ERC721, ERC721Enumerable, ERC2981)
+        returns (bool)
+    {
+        return super.supportsInterface(interfaceId);
+    }
+
+    function _beforeTokenTransfer(address from, address to, uint256 tokenId)
+        internal
+        override(ERC721, ERC721Enumerable)
+    {
+        super._beforeTokenTransfer(from, to, tokenId);
+    }
+
     function _burn (uint256 tokenId)
         internal
         override(ERC721, ERC721URIStorage)
@@ -220,53 +265,8 @@ contract OnDripNFT is ERC721, ERC721URIStorage {
  
     }
  
-    //Not sure if this is actually needed
-     function _transfer(
-        address from,
-        address to,
-        uint256 tokenId
-    ) internal virtual override(ERC721) {
-       
-        super._beforeTokenTransfer(from, to, tokenId);
-    }
- 
-    //TESTING
     function balanceOfContract() external view  returns (uint256) {
         return address(this).balance;
     }
- 
-    //TESTING
-    function getcurrentTimeStamp() external view returns (uint256) {
-        return block.timestamp;
-    }
-
-    //TESTING - get tokenUri function 
-    function getTokenUri(uint256 _tokenId) external view returns (string memory){
-        string memory _tokenURI = tokenURI(_tokenId);
-        return _tokenURI;
-    }
 
 }
- 
- ////////////////////////////////////////////////////EXTRA FUNCTIONS/////////////////////////////////////////////////
-
-    //with only one minting contract we this will be hard to do without a mapping, or changing state a bunch of times -- we will come back to this
-    //function withdrawSettlmentFunds(uint256 _tokenId) public
-    //{
-        //require(s_cardAttributes[_tokenId].accountOwner == msg.sender, "you are not the account owner" ); 
-   
-    //}
-
-
-    
-    //Possible kill switch if needed
-    //function killSwitch(uint256 _tokenId) external
-    //{
-        //require(s_cardAttributes[_tokenId].accountOwner == msg.sender, "you are not the account owner" ); 
-        //require(s_cardAttributes[_tokenId].cardState == CardValid.NONVALID, "card is still in use");
-   
-            //_burn(_tokenId);
-            //delete s_cardAttributes[_tokenId];
-    //}
- 
- 
