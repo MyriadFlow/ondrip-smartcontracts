@@ -1,6 +1,6 @@
 specVersion: 0.0.4
 schema:
-  file: ./schema.graphql
+  file: schema.graphql
 dataSources:
   - kind: ethereum
     name: OnDripNFT
@@ -24,7 +24,7 @@ dataSources:
         - Transfer
       abis:
         - name: OnDripNFT
-          file: ./abis/OnDripNFT.json
+          file: OnDripNFT/abis/OnDripNFT.json
       eventHandlers:
         - event: AccountMinted(indexed address,uint256,string,uint256,uint256,bool)
           handler: handleAccountMinted
@@ -42,4 +42,4 @@ dataSources:
           handler: handleSubscriptionUpdate
         - event: Transfer(indexed address,indexed address,indexed uint256)
           handler: handleTransfer
-      file: ./src/on-drip-nft.ts
+      file: OnDripNFT/OnDripNFT.wasm
