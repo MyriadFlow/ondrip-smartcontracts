@@ -65,6 +65,12 @@
       },
       {
         "indexed": false,
+        "internalType": "bytes32",
+        "name": "_credentials",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
         "internalType": "bool",
         "name": "_active",
         "type": "bool"
@@ -257,6 +263,25 @@
   {
     "inputs": [
       {
+        "internalType": "uint256",
+        "name": "_tokenID",
+        "type": "uint256"
+      }
+    ],
+    "name": "accessToCredentials",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "access",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "address",
         "name": "to",
         "type": "address"
@@ -307,20 +332,49 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "_salePrice",
-        "type": "uint256"
+        "internalType": "bytes",
+        "name": "data",
+        "type": "bytes"
       }
     ],
-    "name": "calculateRoyalty",
+    "name": "decode",
     "outputs": [
       {
         "internalType": "uint256",
-        "name": "",
+        "name": "password",
         "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "username",
+        "type": "string"
       }
     ],
-    "stateMutability": "view",
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "password",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "username",
+        "type": "string"
+      }
+    ],
+    "name": "encode",
+    "outputs": [
+      {
+        "internalType": "bytes",
+        "name": "",
+        "type": "bytes"
+      }
+    ],
+    "stateMutability": "pure",
     "type": "function"
   },
   {
@@ -358,7 +412,7 @@
         "type": "bytes32"
       }
     ],
-    "stateMutability": "nonpayable",
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -513,60 +567,6 @@
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "name": "s_cardAttributes",
-    "outputs": [
-      {
-        "internalType": "address payable",
-        "name": "accountOwner",
-        "type": "address"
-      },
-      {
-        "internalType": "string",
-        "name": "description",
-        "type": "string"
-      },
-      {
-        "internalType": "string",
-        "name": "imgURI",
-        "type": "string"
-      },
-      {
-        "internalType": "uint256",
-        "name": "rateAmount",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "renewalFee",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "subscriptionTime",
-        "type": "uint256"
-      },
-      {
-        "internalType": "bytes32",
-        "name": "credentials",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "bool",
-        "name": "cardValid",
-        "type": "bool"
       }
     ],
     "stateMutability": "view",

@@ -38,8 +38,6 @@ export function handleSubscriptionUpdate(event: SubscriptionUpdate): void {
   }
 }
 
-
-
 export function handleSubscriptionStatus(event: SubscriptionStatus): void {
   let token = SubToken.load(event.params._tokenID.toString());
   if (token) {
@@ -61,7 +59,7 @@ export function handleAccountMinted(event: AccountMinted): void {
     token.rateAmount = event.params._rateAmount
     token.renewalFee = event.params.__renewalFee
     token.description = event.params._description
-    // TODO: token.credientials = event.params.__credientials;
+    token.credientials = event.params._credentials
     token.subsTime = new BigInt(0);
     token.credientials = new Bytes(1);
     token.renewalFee = event.params.__renewalFee

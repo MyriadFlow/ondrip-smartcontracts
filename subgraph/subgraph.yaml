@@ -6,9 +6,9 @@ dataSources:
     name: OnDripNFT
     network: mumbai
     source:
-      address: "0x9C8B8304123200A4d5183B8DDdCC7D873D33E2eC"
+      address: "0xD9D4bB973DEda5196433Bea1838210AFeC55Fc4e"
       abi: OnDripNFT
-      startBlock: 27228700
+      startBlock: 27243842
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.5
@@ -26,16 +26,8 @@ dataSources:
         - name: OnDripNFT
           file: ./abis/OnDripNFT.json
       eventHandlers:
-        - event: AccountMinted(indexed address,uint256,string,uint256,uint256,bool)
+        - event: AccountMinted(indexed address,uint256,string,uint256,uint256,bytes32,bool)
           handler: handleAccountMinted
-        - event: Approval(indexed address,indexed address,indexed uint256)
-          handler: handleApproval
-        - event: ApprovalForAll(indexed address,indexed address,bool)
-          handler: handleApprovalForAll
-        - event: FundsWithdrawn(indexed address,indexed address)
-          handler: handleFundsWithdrawn
-        - event: OwnershipTransferred(indexed address,indexed address)
-          handler: handleOwnershipTransferred
         - event: SubscriptionStatus(indexed address,uint256,indexed address,bool)
           handler: handleSubscriptionStatus
         - event: SubscriptionUpdate(indexed address,uint256,uint256,indexed address,uint256)
@@ -43,3 +35,32 @@ dataSources:
         - event: Transfer(indexed address,indexed address,indexed uint256)
           handler: handleTransfer
       file: ./src/on-drip-nft.ts
+  - kind: ethereum
+    name: OnDripMarketplace
+    network: mumbai
+    source:
+      address: "0x033322B7b8297EE4f910DA1b0A04c20224EBeaf0"
+      abi: OnDripMarketPlace
+      startBlock: 27243857
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - AccountMinted
+        - Approval
+        - ApprovalForAll
+        - FundsWithdrawn
+        - OwnershipTransferred
+        - SubscriptionStatus
+        - SubscriptionUpdate
+        - Transfer
+      abis:
+        - name: OnDripMarketPlace
+          file: ./abis/OnDripMarketPlace.json
+      eventHandlers:
+        - event: MarketItemCreated(indexed uint256,indexed address,indexed uint256,address,address,uint256,bool)
+          handler: handleMarketItemCreated
+        - event: MarketItemSold(indexed uint256,indexed uint256,address,uint256)
+          handler: handleMarketItemSold
+      file: ./src/on-drip-marketplace.ts
