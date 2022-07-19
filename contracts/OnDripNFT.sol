@@ -6,9 +6,9 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/common/ERC2981.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
-import "base64-sol/base64.sol";
+import "@openzeppelin/contracts/utils/Base64.sol";
 
- error Payments__Failed();
+error Payments__Failed();
  
 contract OnDripNFT is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerable {
     using Counters for Counters.Counter;
@@ -17,7 +17,6 @@ contract OnDripNFT is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerable {
     uint96 s_royaltyFeeBips;
 
     address payable public s_contractOwner;
-    address s_royaltyReciever; //who gets the royalties its mapped to token id account owners when their token is traded
  
     uint256 public immutable maxInterval = 15768000; //six months
     uint256 public immutable minInterval = 10800; //three hours
@@ -33,7 +32,7 @@ contract OnDripNFT is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerable {
         bool cardValid;
     }
  
-    mapping (uint256 => cardAttributes) public s_cardAttributes;
+    mapping (uint256 => cardAttributes) private s_cardAttributes;
 
     Counters.Counter private _tokenIdCounter;
  
@@ -50,13 +49,13 @@ contract OnDripNFT is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerable {
     }
  
     //EVENTS 
-    event AccountMinted(address indexed _accountOwner, uint _id, string _description, uint _rateAmount, uint __renewalFee, bool _active);
+    event AccountMinted(address indexed _accountOwner, uint _id, string _description, uint _rateAmount, uint __renewalFee, bytes32 _credentials, bool _active);
     event OwnershipTransferred(address indexed _from, address indexed _to);
     event SubscriptionStatus(address indexed _renter, uint _tokenID, address indexed _receiver, bool _active);
     event SubscriptionUpdate(address indexed _renter, uint _tokenID, uint _hour, address indexed _receiver, uint _amount); //prob can only do time ...
     event FundsWithdrawn(address indexed _from, address indexed _to);
 
-    //MODIFIERS
+    //OPTIONAL MODIFIER - When Called Pre Function It Checks On Time Expiry Of SUB  
     modifier getTokeValid(uint256 _tokenID) {
         address renter = ownerOf(_tokenID);
         if(s_cardAttributes[_tokenID].subscriptionTime <= block.timestamp){
@@ -70,6 +69,7 @@ contract OnDripNFT is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerable {
         _;
     }
 
+    //OPTIONAL MODIFIER
     modifier onlyOwner() {
         require(msg.sender==s_contractOwner);
         _;
@@ -81,11 +81,11 @@ contract OnDripNFT is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerable {
         string memory _description,
         uint256 _rateAmount,
         uint256 _renewalFee, 
-        bytes32 _credentials
+        bytes32 _credentials //HOW ARE CREDETIALS HANDLED
 
     ) external {
         
-        require(s_mintLive, "Mint isn't live");
+        //require(s_mintLive, "Mint isn't live");
  
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
@@ -104,12 +104,13 @@ contract OnDripNFT is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerable {
             cardValid: false
             });
  
-        _setTokenRoyalty(tokenId, msg.sender, s_royaltyFeeBips);//should user set their own royalty
+        _setTokenRoyalty(tokenId, msg.sender, s_royaltyFeeBips); //USER MAY SET THIER OWN ROYALTY
         _setTokenURI(tokenId, tokenURI(tokenId)); 
-        emit AccountMinted(msg.sender, tokenId, _description, _rateAmount, _renewalFee, false);  
+        emit AccountMinted(msg.sender, tokenId, _description, _rateAmount, _renewalFee, _credentials, false);  
 
     }
 
+    //SET MINT FOR ROLE ACCESS MINTING 
     function setMint( bool _mintLive) public onlyOwner {
        s_mintLive = _mintLive;
     }
@@ -124,7 +125,7 @@ contract OnDripNFT is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerable {
         emit FundsWithdrawn(address(this), msg.sender);
     }
 
-    function topUp(uint256 _tokenID) external getTokeValid(_tokenID) payable {
+    function topUp(uint256 _tokenID) external payable {
         require(ownerOf(_tokenID) == msg.sender, "not owner");
         require(s_cardAttributes[_tokenID].cardValid == true, "Card not active");
 
@@ -170,16 +171,6 @@ contract OnDripNFT is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerable {
         s_cardAttributes[_tokenID].subscriptionTime += block.timestamp + 10800; 
 
         emit SubscriptionStatus(msg.sender, _tokenID, s_cardAttributes[_tokenID].accountOwner, s_cardAttributes[_tokenID].cardValid);
-
-    }
-
-    //add token ID so its different accross tokenIDs
-    function calculateRoyalty(uint256 _salePrice) view public returns (uint256) {
-        return (_salePrice / 10000) * s_royaltyFeeBips;
-    }
-
-    function _baseURI() internal pure override returns (string memory) {
-        return "data:application/json;base64,";
     }
 
     function tokenURI(uint256 _tokenId)
@@ -191,34 +182,63 @@ contract OnDripNFT is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerable {
         require(_exists(_tokenId),"ERC721Metadata: URI query for nonexistent token");
         
         cardAttributes memory cardAttribute = s_cardAttributes[_tokenId];
-        string memory strRateAmount = Strings.toString(cardAttribute.rateAmount);
         string memory imageURI = cardAttribute.imgURI;
+        
+        bytes memory m1 = abi.encodePacked(
+            '{"name":"',
+            name(),
+            " Membership",
+            '", "description":"',
+            cardAttribute.description,
+            " Membership",
+            '", "image": "',
+             imageURI,
+            // adding policyHolder
+            '", "attributes": [{"trait_type":"Governance Score",',
+            '"value":"',
+            Strings.toString (10),
+            '"}]}'
+        );
 
         return
             string(
                 abi.encodePacked(
-                    _baseURI(),
-                    Base64.encode(
-                        bytes(
-                            abi.encodePacked(
-                                 '{"name":"',
-                                name(),
-                                " Description ",
-                                '", "description":"',
-                                cardAttribute.description,
-                                " Vendor",
-                                '", "image": "',
-                                imageURI,
-                                '", "attributes": [{"trait_type":"Rate Amount",',
-                                '"value":"',
-                                strRateAmount,
-                                '"}]}'
-                            )
-                        )
-                    )
+                    "data:application/json;base64,",
+                    Base64.encode(bytes.concat(m1))
                 )
             );
+    }
 
+    function accessToCredentials(uint256 _tokenID) public returns (bool access) {
+        if (s_cardAttributes[_tokenID].subscriptionTime > block.timestamp){
+            s_cardAttributes[_tokenID].cardValid = true;
+            return true;
+        }
+        else if (s_cardAttributes[_tokenID].subscriptionTime <= block.timestamp) {
+            s_cardAttributes[_tokenID].cardValid = false;
+            return false;
+        }
+        
+    }
+
+    //GETTER FUNCTION IF NEEDED
+    function getTokenCredentials(uint256 _tokenID) public view returns (bytes32) {
+        require(ownerOf(_tokenID) == msg.sender, "not owner");
+        require(s_cardAttributes[_tokenID].subscriptionTime > block.timestamp);
+        require(s_cardAttributes[_tokenID].cardValid == true, "Card not active");
+    
+        return s_cardAttributes[_tokenID].credentials;
+        
+    }
+
+    //Possibly Functions For Encoding Or Decoding -- Might Change Password and Username To String  To String - Stringify
+    function encode(uint256 password, string memory username) external pure returns (bytes memory) {
+        return abi.encode(password, username);
+    }
+
+    //Possibly Functions For Encoding Or Decoding -- Might Change Password and Username To String  To String - Stringify
+    function decode (bytes calldata data) external pure returns (uint256 password, string memory username){
+        (password, username) = abi.decode(data, (uint256, string));
     }
 
     function supportsInterface(bytes4 interfaceId)
@@ -237,15 +257,6 @@ contract OnDripNFT is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerable {
         super._beforeTokenTransfer(from, to, tokenId);
     }
 
-    function getTokenCredentials(uint256 _tokenID) external getTokeValid(_tokenID) returns (bytes32) {
-        require(ownerOf(_tokenID) == msg.sender, "not owner");
-        require(s_cardAttributes[_tokenID].subscriptionTime > block.timestamp);
-        require(s_cardAttributes[_tokenID].cardValid == true, "Card not active");
-    
-        return s_cardAttributes[_tokenID].credentials;
-        
-    }
-
     function _burn (uint256 tokenId)
         internal
         override(ERC721, ERC721URIStorage)
@@ -257,7 +268,5 @@ contract OnDripNFT is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerable {
     function balanceOfContract() external view  returns (uint256) {
         return address(this).balance;
     }
-
- 
 
 }
