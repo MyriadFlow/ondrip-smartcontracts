@@ -14,7 +14,7 @@ npx hardhat run scripts/deploy.js
 # Credientials format
 ```json
 {
-    "excryptedKey": "base64",
-    "excrypedtedData": "base64"
+    "excryptedKey": "hex",
+    "excrypedtedData": "hex"
 }
 ```
