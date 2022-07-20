@@ -20,6 +20,7 @@ contract OnDripNFT is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerable {
     uint256 public immutable minInterval = 10800; //three hours
 
     address public s_contractOwner;
+    address public s_nftMarketplace; 
 
     struct cardAttributes {
         address payable accountOwner;
@@ -40,10 +41,12 @@ contract OnDripNFT is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerable {
         string memory _name,
         string memory _symbol,
         address _owner,
+        address _nftMarketPlace,
         uint96 _royaltyFeeBips
     ) ERC721(_name, _symbol) {
         s_contractOwner = _owner;
         s_royaltyFeeBips = _royaltyFeeBips;
+        s_nftMarketplace = _nftMarketPlace;
     }
 
     //EVENTS
@@ -69,15 +72,16 @@ contract OnDripNFT is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerable {
         uint256 _hour,
         address indexed _receiver,
         uint256 _amount
-    ); //prob can only do time ...
+    ); 
     event FundsWithdrawn(address indexed _from, address indexed _to);
     event CredientialsUpdated(uint256 _tokenID, bytes32 credientials);
-    //OPTIONAL MODIFIER - When Called Pre Function It Checks On Time Expiry Of SUB
+    
     modifier onlyOwner() {
         require(msg.sender == s_contractOwner);
         _;
     }
 
+    //OPTIONAL MODIFIER
     modifier getTokeValid(uint256 _tokenID) {
         address renter = ownerOf(_tokenID);
         if (s_cardAttributes[_tokenID].subscriptionTime <= block.timestamp) {
@@ -102,8 +106,7 @@ contract OnDripNFT is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerable {
         string memory _description,
         uint256 _rateAmount,
         uint256 _renewalFee
-    ) external {
-        //require(s_mintLive, "Mint isn't live");
+    ) external returns (uint256) {
 
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
@@ -123,6 +126,7 @@ contract OnDripNFT is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerable {
 
         _setTokenRoyalty(tokenId, msg.sender, s_royaltyFeeBips); //USER MAY SET THIER OWN ROYALTY
         _setTokenURI(tokenId, tokenURI(tokenId));
+         setApprovalForAll(s_nftMarketplace, true); //THIS MAY BE PLACED IN A BETTER SPOT 
         emit AccountMinted(
             msg.sender,
             tokenId,
@@ -132,6 +136,8 @@ contract OnDripNFT is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerable {
             "0x",
             false
         );
+
+        return tokenId;
     }
 
     function topUp(uint256 _tokenID) external payable {
@@ -254,7 +260,7 @@ contract OnDripNFT is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerable {
         onlyOwner
     {
         s_cardAttributes[_tokenId].credentials = _credentials;
-        emit CredientialsUpdated(_tokenID, _credentials);
+        emit CredientialsUpdated(_tokenId, _credentials);
     }
 
     function accessToCredentials(uint256 _tokenID)
