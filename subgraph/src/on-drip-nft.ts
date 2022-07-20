@@ -68,3 +68,10 @@ export function handleAccountMinted(event: AccountMinted): void {
   }
 }
 
+// export function handleCredientialsUpdated(event: CredientialsUpdated): void {
+//   let token = SubToken.load(event.params._id.toString());
+//   if (token) {
+//     token.credientials = event.block.credientials;
+//     token.save()
+//   }
+// }

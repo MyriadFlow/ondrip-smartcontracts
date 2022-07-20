@@ -12,7 +12,7 @@
         "type": "string"
       },
       {
-        "internalType": "address payable",
+        "internalType": "address",
         "name": "_owner",
         "type": "address"
       },
@@ -486,11 +486,6 @@
         "internalType": "uint256",
         "name": "_renewalFee",
         "type": "uint256"
-      },
-      {
-        "internalType": "bytes32",
-        "name": "_credentials",
-        "type": "bytes32"
       }
     ],
     "name": "mint",
@@ -577,7 +572,7 @@
     "name": "s_contractOwner",
     "outputs": [
       {
-        "internalType": "address payable",
+        "internalType": "address",
         "name": "",
         "type": "address"
       }
@@ -670,19 +665,6 @@
   {
     "inputs": [
       {
-        "internalType": "bool",
-        "name": "_mintLive",
-        "type": "bool"
-      }
-    ],
-    "name": "setMint",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "bytes4",
         "name": "interfaceId",
         "type": "bytes4"
@@ -759,7 +741,7 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "_tokenId",
+        "name": "tokenId",
         "type": "uint256"
       }
     ],
@@ -826,14 +808,19 @@
   {
     "inputs": [
       {
+        "internalType": "bytes32",
+        "name": "_credentials",
+        "type": "bytes32"
+      },
+      {
         "internalType": "uint256",
-        "name": "_amount",
+        "name": "_tokenId",
         "type": "uint256"
       }
     ],
-    "name": "withdrawFunds",
+    "name": "updateTokenCredentials",
     "outputs": [],
-    "stateMutability": "payable",
+    "stateMutability": "nonpayable",
     "type": "function"
   }
 ]

@@ -709,17 +709,17 @@ export class OnDripNFT extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
-  tokenURI(_tokenId: BigInt): string {
+  tokenURI(tokenId: BigInt): string {
     let result = super.call("tokenURI", "tokenURI(uint256):(string)", [
-      ethereum.Value.fromUnsignedBigInt(_tokenId)
+      ethereum.Value.fromUnsignedBigInt(tokenId)
     ]);
 
     return result[0].toString();
   }
 
-  try_tokenURI(_tokenId: BigInt): ethereum.CallResult<string> {
+  try_tokenURI(tokenId: BigInt): ethereum.CallResult<string> {
     let result = super.tryCall("tokenURI", "tokenURI(uint256):(string)", [
-      ethereum.Value.fromUnsignedBigInt(_tokenId)
+      ethereum.Value.fromUnsignedBigInt(tokenId)
     ]);
     if (result.reverted) {
       return new ethereum.CallResult();
@@ -886,10 +886,6 @@ export class MintCall__Inputs {
   get _renewalFee(): BigInt {
     return this._call.inputValues[3].value.toBigInt();
   }
-
-  get _credentials(): Bytes {
-    return this._call.inputValues[4].value.toBytes();
-  }
 }
 
 export class MintCall__Outputs {
@@ -1044,36 +1040,6 @@ export class SetApprovalForAllCall__Outputs {
   }
 }
 
-export class SetMintCall extends ethereum.Call {
-  get inputs(): SetMintCall__Inputs {
-    return new SetMintCall__Inputs(this);
-  }
-
-  get outputs(): SetMintCall__Outputs {
-    return new SetMintCall__Outputs(this);
-  }
-}
-
-export class SetMintCall__Inputs {
-  _call: SetMintCall;
-
-  constructor(call: SetMintCall) {
-    this._call = call;
-  }
-
-  get _mintLive(): boolean {
-    return this._call.inputValues[0].value.toBoolean();
-  }
-}
-
-export class SetMintCall__Outputs {
-  _call: SetMintCall;
-
-  constructor(call: SetMintCall) {
-    this._call = call;
-  }
-}
-
 export class TopUpCall extends ethereum.Call {
   get inputs(): TopUpCall__Inputs {
     return new TopUpCall__Inputs(this);
@@ -1142,32 +1108,36 @@ export class TransferFromCall__Outputs {
   }
 }
 
-export class WithdrawFundsCall extends ethereum.Call {
-  get inputs(): WithdrawFundsCall__Inputs {
-    return new WithdrawFundsCall__Inputs(this);
+export class UpdateTokenCredentialsCall extends ethereum.Call {
+  get inputs(): UpdateTokenCredentialsCall__Inputs {
+    return new UpdateTokenCredentialsCall__Inputs(this);
   }
 
-  get outputs(): WithdrawFundsCall__Outputs {
-    return new WithdrawFundsCall__Outputs(this);
+  get outputs(): UpdateTokenCredentialsCall__Outputs {
+    return new UpdateTokenCredentialsCall__Outputs(this);
   }
 }
 
-export class WithdrawFundsCall__Inputs {
-  _call: WithdrawFundsCall;
+export class UpdateTokenCredentialsCall__Inputs {
+  _call: UpdateTokenCredentialsCall;
 
-  constructor(call: WithdrawFundsCall) {
+  constructor(call: UpdateTokenCredentialsCall) {
     this._call = call;
   }
 
-  get _amount(): BigInt {
-    return this._call.inputValues[0].value.toBigInt();
+  get _credentials(): Bytes {
+    return this._call.inputValues[0].value.toBytes();
+  }
+
+  get _tokenId(): BigInt {
+    return this._call.inputValues[1].value.toBigInt();
   }
 }
 
-export class WithdrawFundsCall__Outputs {
-  _call: WithdrawFundsCall;
+export class UpdateTokenCredentialsCall__Outputs {
+  _call: UpdateTokenCredentialsCall;
 
-  constructor(call: WithdrawFundsCall) {
+  constructor(call: UpdateTokenCredentialsCall) {
     this._call = call;
   }
 }
