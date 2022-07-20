@@ -1,0 +1,34 @@
+type SubToken @entity {
+  id: ID!
+  createdAtTimestamp: BigInt!
+  accountOwner: User!
+  owner: User!
+  credientials: Bytes!
+  renewalFee: BigInt!
+  rateAmount: BigInt!
+  description: String!
+  subsTime: BigInt!
+  active: Boolean!
+  marketItems: [SubMarketItem!]! @derivedFrom(field: "token")
+}
+
+type User @entity {
+  id: ID!
+  subs: [SubToken!]! @derivedFrom(field: "owner")
+  created: [SubToken!]! @derivedFrom(field: "accountOwner")
+}
+
+type SubMarketItem @entity {
+  id: ID!
+  itemId: BigInt! # uint256
+  nftContract: Bytes! # address
+  owner: Bytes!
+  price: BigInt!
+  seller: Bytes!
+  token: SubToken!
+  forSale: Boolean!
+  createdAtTimestamp: BigInt!
+  metaDataUri: String!
+  sold: Boolean!
+  deleted: Boolean!
+}
