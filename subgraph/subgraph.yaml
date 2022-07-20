@@ -34,6 +34,8 @@ dataSources:
           handler: handleSubscriptionUpdate
         - event: Transfer(indexed address,indexed address,indexed uint256)
           handler: handleTransfer
+        - event: CredientialsUpdated(bytes32,uint256)
+          handler: handleCredientialsUpdated
       file: ./src/on-drip-nft.ts
   - kind: ethereum
     name: OnDripMarketplace
