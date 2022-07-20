@@ -59,8 +59,6 @@ contract OnDripMarket is ReentrancyGuard {
          address buyer,
          uint256 price 
     );
-     
-    
     
     function createMarketItem(
         //address nftContract,
