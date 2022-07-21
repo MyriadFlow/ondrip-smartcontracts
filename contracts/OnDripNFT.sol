@@ -20,7 +20,7 @@ contract OnDripNFT is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerable {
     uint256 public immutable minInterval = 10800; //three hours
 
     address public s_contractOwner;
-    address public s_nftMarketplace; 
+    address public s_nftMarketplace;
 
     struct cardAttributes {
         address payable accountOwner;
@@ -72,10 +72,10 @@ contract OnDripNFT is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerable {
         uint256 _hour,
         address indexed _receiver,
         uint256 _amount
-    ); 
+    );
     event FundsWithdrawn(address indexed _from, address indexed _to);
     event CredientialsUpdated(uint256 _tokenID, bytes32 credientials);
-    
+    event SubsTimeUpdated(uint256 subscriptionTime);
     modifier onlyOwner() {
         require(msg.sender == s_contractOwner);
         _;
@@ -107,7 +107,6 @@ contract OnDripNFT is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerable {
         uint256 _rateAmount,
         uint256 _renewalFee
     ) external returns (uint256) {
-
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
 
@@ -126,7 +125,7 @@ contract OnDripNFT is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerable {
 
         _setTokenRoyalty(tokenId, msg.sender, s_royaltyFeeBips); //USER MAY SET THIER OWN ROYALTY
         _setTokenURI(tokenId, tokenURI(tokenId));
-         setApprovalForAll(s_nftMarketplace, true); //THIS MAY BE PLACED IN A BETTER SPOT 
+        setApprovalForAll(s_nftMarketplace, true); //THIS MAY BE PLACED IN A BETTER SPOT
         emit AccountMinted(
             msg.sender,
             tokenId,
@@ -153,6 +152,7 @@ contract OnDripNFT is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerable {
             s_cardAttributes[_tokenID].subscriptionTime +=
                 block.timestamp +
                 newTime;
+            emit SubsTimeUpdated(s_cardAttributes[_tokenID].subscriptionTime);
             address receiver = s_cardAttributes[_tokenID].accountOwner;
             (bool success, ) = receiver.call{value: msg.value}("");
             require(success, "Transfer failed");
@@ -182,6 +182,7 @@ contract OnDripNFT is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerable {
             currentSub,
             _tokenID,
             hour,
+            newTime,
             s_cardAttributes[_tokenID].accountOwner,
             _amount
         );

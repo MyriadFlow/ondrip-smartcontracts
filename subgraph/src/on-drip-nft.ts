@@ -4,6 +4,7 @@ import {
   AccountMinted,
   SubscriptionStatus,
   SubscriptionUpdate,
+  // SubsTimeUpdated,
   Transfer,
   CredientialsUpdated,
 } from "../generated/OnDripNFT/OnDripNFT"
@@ -22,51 +23,60 @@ function createUser(id: string): void {
 
 export function handleTransfer(event: Transfer): void {
   let token = SubToken.load(event.params.tokenId.toString());
-  if (!token) {
-    throw new Error("Token doesn't exist");
+  if (token) {
+    token.owner = event.params.to.toHexString();
+    token.save();
+    createUser(token.owner);
+    token.save();
   }
-  token.owner = event.params.to.toHexString();
-  token.save();
-  createUser(token.owner);
-  token.save();
 }
 
 export function handleSubscriptionUpdate(event: SubscriptionUpdate): void {
   let token = SubToken.load(event.params._tokenID.toString());
-  if (!token) {
-    throw new Error("Token doesn't exist");
+  if (token) {
+    token.accountOwner = event.params._receiver.toHexString();
+    token.owner = event.params._renter.toHexString();
+    token.save();
   }
-  token.accountOwner = event.params._receiver.toHexString();
-  token.owner = event.params._renter.toHexString();
-  token.save();
 }
+
+// export function handleSubsTimeUpdated(event: SubsTimeUpdated): void {
+//   let token = SubToken.load(event.params._tokenID.toString());
+//   if (!token) {
+//     throw new Error("Token doesn't exist");
+//   }
+//   token.subsTime = event.params.credientials;
+//   token.save()
+// }
 
 export function handleSubscriptionStatus(event: SubscriptionStatus): void {
   let token = SubToken.load(event.params._tokenID.toString());
-  if (!token) {
-    throw new Error("Token doesn't exist");
+  if (token) {
+    token.accountOwner = event.params._receiver.toHexString();
+    token.owner = event.params._renter.toHexString();
+    token.active = event.params._active
+    token.save();
   }
-  token.accountOwner = event.params._receiver.toHexString();
-  token.owner = event.params._renter.toHexString();
-  token.active = event.params._active
-  token.save();
 }
 
 export function handleAccountMinted(event: AccountMinted): void {
-  let token = new SubToken(event.params._id.toString())
-  token.createdAtTimestamp = event.block.timestamp
-  token.accountOwner = event.params._accountOwner.toHexString()
-  token.owner = event.params._accountOwner.toHexString();
-  token.active = event.params._active;
-  token.rateAmount = event.params._rateAmount
-  token.renewalFee = event.params.__renewalFee
-  token.description = event.params._description
-  token.credientials = event.params._credentials
-  token.subsTime = new BigInt(0);
-  token.credientials = new Bytes(1);
-  token.renewalFee = event.params.__renewalFee
-  token.save()
-  createUser(token.accountOwner)
+  let token = SubToken.load(event.params._id.toString());
+  if (!token) {
+    token = new SubToken(event.params._id.toString())
+    token.createdAtTimestamp = event.block.timestamp
+    token.accountOwner = event.params._accountOwner.toHexString()
+    token.owner = event.params._accountOwner.toHexString();
+    token.active = event.params._active;
+    token.rateAmount = event.params._rateAmount
+    token.renewalFee = event.params.__renewalFee
+    token.description = event.params._description
+    token.credientials = event.params._credentials
+    token.subsTime = new BigInt(0);
+    token.credientials = new Bytes(1);
+    token.renewalFee = event.params.__renewalFee
+    token.save()
+    createUser(token.accountOwner)
+  }
 }
 
 export function handleCredientialsUpdated(event: CredientialsUpdated): void {

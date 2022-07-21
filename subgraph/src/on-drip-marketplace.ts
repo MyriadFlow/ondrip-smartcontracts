@@ -1,4 +1,3 @@
-import { log } from "@graphprotocol/graph-ts";
 import {
     MarketItemCreated,
     MarketItemRemoved,
@@ -7,8 +6,11 @@ import {
 import { SubMarketItem, SubToken } from "../generated/schema"
 
 export function handleMarketItemCreated(event: MarketItemCreated): void {
-    let marketItem = new SubMarketItem(event.params.itemId.toString());
-    marketItem.createdAtTimestamp = event.block.timestamp
+    let marketItem = SubMarketItem.load(event.params.itemId.toString())
+    if (!marketItem) {
+        marketItem = new SubMarketItem(event.params.itemId.toString());
+        marketItem.createdAtTimestamp = event.block.timestamp
+    }
 
     let token = SubToken.load(event.params.tokenId.toString())
     if (token) {
@@ -20,6 +22,8 @@ export function handleMarketItemCreated(event: MarketItemCreated): void {
         marketItem.forSale = true
         marketItem.price = event.params.price
         marketItem.deleted = false
+        marketItem.metaDataUri = event.params.metaDataURI
+        marketItem.sold = false;
         marketItem.save()
     }
 
@@ -28,7 +32,7 @@ export function handleMarketItemCreated(event: MarketItemCreated): void {
 export function handleMarketItemSold(event: MarketItemSold): void {
     let marketItem = SubMarketItem.load(event.params.itemId.toString())
     if (!marketItem) {
-        throw new Error("Market item doesn't exist");
+        marketItem = new SubMarketItem(event.params.itemId.toString());
     }
     marketItem.owner = event.params.buyer;
     marketItem.sold = true;
@@ -38,7 +42,7 @@ export function handleMarketItemSold(event: MarketItemSold): void {
 export function handleMarketItemRemoved(event: MarketItemRemoved): void {
     let marketItem = SubMarketItem.load(event.params.itemId.toString())
     if (!marketItem) {
-        throw new Error("Market item doesn't exist");
+        marketItem = new SubMarketItem(event.params.itemId.toString());
     }
     marketItem.deleted = true;
     marketItem.save()
