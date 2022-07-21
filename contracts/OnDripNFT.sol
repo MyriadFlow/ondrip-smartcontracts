@@ -152,7 +152,7 @@ contract OnDripNFT is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerable {
             s_cardAttributes[_tokenID].subscriptionTime +=
                 block.timestamp +
                 newTime;
-            emit SubsTimeUpdated(s_cardAttributes[_tokenID].subscriptionTime);
+            emit SubsTimeUpdated(_tokenID,s_cardAttributes[_tokenID].subscriptionTime);
             address receiver = s_cardAttributes[_tokenID].accountOwner;
             (bool success, ) = receiver.call{value: msg.value}("");
             require(success, "Transfer failed");
