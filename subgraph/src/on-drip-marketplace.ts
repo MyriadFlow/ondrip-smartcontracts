@@ -1,3 +1,4 @@
+import { log } from "@graphprotocol/graph-ts";
 import {
     MarketItemCreated,
     MarketItemRemoved,
@@ -32,7 +33,8 @@ export function handleMarketItemCreated(event: MarketItemCreated): void {
 export function handleMarketItemSold(event: MarketItemSold): void {
     let marketItem = SubMarketItem.load(event.params.itemId.toString())
     if (!marketItem) {
-        marketItem = new SubMarketItem(event.params.itemId.toString());
+        log.error("market item with itemId {} doesn't exist", [event.params.itemId.toString()])
+        return
     }
     marketItem.owner = event.params.buyer;
     marketItem.sold = true;
@@ -42,7 +44,8 @@ export function handleMarketItemSold(event: MarketItemSold): void {
 export function handleMarketItemRemoved(event: MarketItemRemoved): void {
     let marketItem = SubMarketItem.load(event.params.itemId.toString())
     if (!marketItem) {
-        marketItem = new SubMarketItem(event.params.itemId.toString());
+        log.error("market item with itemId {} doesn't exist", [event.params.itemId.toString()])
+        return
     }
     marketItem.deleted = true;
     marketItem.save()

@@ -1,10 +1,8 @@
-import { Address, BigInt, Bytes } from "@graphprotocol/graph-ts"
+import { BigInt, Bytes } from "@graphprotocol/graph-ts"
 import {
-  OnDripNFT,
   AccountMinted,
   SubscriptionStatus,
   SubscriptionUpdate,
-  // SubsTimeUpdated,
   Transfer,
   CredientialsUpdated,
   SubsTimeUpdated,
