@@ -104,6 +104,28 @@ export class ApprovalForAll__Params {
   }
 }
 
+export class CredientialsUpdated extends ethereum.Event {
+  get params(): CredientialsUpdated__Params {
+    return new CredientialsUpdated__Params(this);
+  }
+}
+
+export class CredientialsUpdated__Params {
+  _event: CredientialsUpdated;
+
+  constructor(event: CredientialsUpdated) {
+    this._event = event;
+  }
+
+  get _tokenID(): BigInt {
+    return this._event.parameters[0].value.toBigInt();
+  }
+
+  get credientials(): Bytes {
+    return this._event.parameters[1].value.toBytes();
+  }
+}
+
 export class FundsWithdrawn extends ethereum.Event {
   get params(): FundsWithdrawn__Params {
     return new FundsWithdrawn__Params(this);
@@ -503,6 +525,49 @@ export class OnDripNFT extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
+  mint(
+    _vendorURI: string,
+    _description: string,
+    _rateAmount: BigInt,
+    _renewalFee: BigInt
+  ): BigInt {
+    let result = super.call(
+      "mint",
+      "mint(string,string,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromString(_vendorURI),
+        ethereum.Value.fromString(_description),
+        ethereum.Value.fromUnsignedBigInt(_rateAmount),
+        ethereum.Value.fromUnsignedBigInt(_renewalFee)
+      ]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_mint(
+    _vendorURI: string,
+    _description: string,
+    _rateAmount: BigInt,
+    _renewalFee: BigInt
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "mint",
+      "mint(string,string,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromString(_vendorURI),
+        ethereum.Value.fromString(_description),
+        ethereum.Value.fromUnsignedBigInt(_rateAmount),
+        ethereum.Value.fromUnsignedBigInt(_renewalFee)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
   name(): string {
     let result = super.call("name", "name():(string)", []);
 
@@ -616,6 +681,29 @@ export class OnDripNFT extends ethereum.SmartContract {
     }
     let value = result.value;
     return ethereum.CallResult.fromValue(value[0].toBoolean());
+  }
+
+  s_nftMarketplace(): Address {
+    let result = super.call(
+      "s_nftMarketplace",
+      "s_nftMarketplace():(address)",
+      []
+    );
+
+    return result[0].toAddress();
+  }
+
+  try_s_nftMarketplace(): ethereum.CallResult<Address> {
+    let result = super.tryCall(
+      "s_nftMarketplace",
+      "s_nftMarketplace():(address)",
+      []
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toAddress());
   }
 
   supportsInterface(interfaceId: Bytes): boolean {
@@ -773,8 +861,12 @@ export class ConstructorCall__Inputs {
     return this._call.inputValues[2].value.toAddress();
   }
 
+  get _nftMarketPlace(): Address {
+    return this._call.inputValues[3].value.toAddress();
+  }
+
   get _royaltyFeeBips(): BigInt {
-    return this._call.inputValues[3].value.toBigInt();
+    return this._call.inputValues[4].value.toBigInt();
   }
 }
 
@@ -893,6 +985,10 @@ export class MintCall__Outputs {
 
   constructor(call: MintCall) {
     this._call = call;
+  }
+
+  get value0(): BigInt {
+    return this._call.outputValues[0].value.toBigInt();
   }
 }
 

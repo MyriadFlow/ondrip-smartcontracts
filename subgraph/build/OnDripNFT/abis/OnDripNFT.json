@@ -17,6 +17,11 @@
         "type": "address"
       },
       {
+        "internalType": "address",
+        "name": "_nftMarketPlace",
+        "type": "address"
+      },
+      {
         "internalType": "uint96",
         "name": "_royaltyFeeBips",
         "type": "uint96"
@@ -127,6 +132,25 @@
       }
     ],
     "name": "ApprovalForAll",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "_tokenID",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "credientials",
+        "type": "bytes32"
+      }
+    ],
+    "name": "CredientialsUpdated",
     "type": "event"
   },
   {
@@ -489,7 +513,13 @@
       }
     ],
     "name": "mint",
-    "outputs": [],
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -588,6 +618,19 @@
         "internalType": "bool",
         "name": "",
         "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "s_nftMarketplace",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
       }
     ],
     "stateMutability": "view",

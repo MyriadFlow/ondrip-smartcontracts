@@ -4,6 +4,11 @@
       { "internalType": "string", "name": "_name", "type": "string" },
       { "internalType": "string", "name": "_symbol", "type": "string" },
       { "internalType": "address", "name": "_owner", "type": "address" },
+      {
+        "internalType": "address",
+        "name": "_nftMarketPlace",
+        "type": "address"
+      },
       { "internalType": "uint96", "name": "_royaltyFeeBips", "type": "uint96" }
     ],
     "stateMutability": "nonpayable",
@@ -107,6 +112,25 @@
       }
     ],
     "name": "ApprovalForAll",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "_tokenID",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "credientials",
+        "type": "bytes32"
+      }
+    ],
+    "name": "CredientialsUpdated",
     "type": "event"
   },
   {
@@ -345,7 +369,7 @@
       { "internalType": "uint256", "name": "_renewalFee", "type": "uint256" }
     ],
     "name": "mint",
-    "outputs": [],
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -398,6 +422,13 @@
     "inputs": [],
     "name": "s_mintLive",
     "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "s_nftMarketplace",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
     "stateMutability": "view",
     "type": "function"
   },

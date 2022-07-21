@@ -1,17 +1,14 @@
-import { BigInt } from "@graphprotocol/graph-ts"
+import { log } from "@graphprotocol/graph-ts";
 import {
     MarketItemCreated,
+    MarketItemRemoved,
     MarketItemSold,
-    // MarketItemRemoved,
 } from "../generated/OnDripMarketplace/OnDripMarketPlace"
 import { SubMarketItem, SubToken } from "../generated/schema"
 
 export function handleMarketItemCreated(event: MarketItemCreated): void {
-    let marketItem = SubMarketItem.load(event.params.itemId.toString())
-    if (!marketItem) {
-        marketItem = new SubMarketItem(event.params.itemId.toString());
-        marketItem.createdAtTimestamp = event.block.timestamp
-    }
+    let marketItem = new SubMarketItem(event.params.itemId.toString());
+    marketItem.createdAtTimestamp = event.block.timestamp
 
     let token = SubToken.load(event.params.tokenId.toString())
     if (token) {
@@ -31,10 +28,18 @@ export function handleMarketItemCreated(event: MarketItemCreated): void {
 export function handleMarketItemSold(event: MarketItemSold): void {
     let marketItem = SubMarketItem.load(event.params.itemId.toString())
     if (!marketItem) {
-        marketItem = new SubMarketItem(event.params.itemId.toString());
+        throw new Error("Market item doesn't exist");
     }
     marketItem.owner = event.params.buyer;
     marketItem.sold = true;
     marketItem.save()
 }
 
+export function handleMarketItemRemoved(event: MarketItemRemoved): void {
+    let marketItem = SubMarketItem.load(event.params.itemId.toString())
+    if (!marketItem) {
+        throw new Error("Market item doesn't exist");
+    }
+    marketItem.deleted = true;
+    marketItem.save()
+}
