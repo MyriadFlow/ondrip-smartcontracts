@@ -195,6 +195,25 @@
     "anonymous": false,
     "inputs": [
       {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "subscriptionTime",
+        "type": "uint256"
+      }
+    ],
+    "name": "SubsTimeUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
         "indexed": true,
         "internalType": "address",
         "name": "_renter",
@@ -241,6 +260,12 @@
         "indexed": false,
         "internalType": "uint256",
         "name": "_hour",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "_newTime",
         "type": "uint256"
       },
       {

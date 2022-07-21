@@ -170,6 +170,28 @@ export class OwnershipTransferred__Params {
   }
 }
 
+export class SubsTimeUpdated extends ethereum.Event {
+  get params(): SubsTimeUpdated__Params {
+    return new SubsTimeUpdated__Params(this);
+  }
+}
+
+export class SubsTimeUpdated__Params {
+  _event: SubsTimeUpdated;
+
+  constructor(event: SubsTimeUpdated) {
+    this._event = event;
+  }
+
+  get tokenId(): BigInt {
+    return this._event.parameters[0].value.toBigInt();
+  }
+
+  get subscriptionTime(): BigInt {
+    return this._event.parameters[1].value.toBigInt();
+  }
+}
+
 export class SubscriptionStatus extends ethereum.Event {
   get params(): SubscriptionStatus__Params {
     return new SubscriptionStatus__Params(this);
@@ -225,12 +247,16 @@ export class SubscriptionUpdate__Params {
     return this._event.parameters[2].value.toBigInt();
   }
 
+  get _newTime(): BigInt {
+    return this._event.parameters[3].value.toBigInt();
+  }
+
   get _receiver(): Address {
-    return this._event.parameters[3].value.toAddress();
+    return this._event.parameters[4].value.toAddress();
   }
 
   get _amount(): BigInt {
-    return this._event.parameters[4].value.toBigInt();
+    return this._event.parameters[5].value.toBigInt();
   }
 }
 

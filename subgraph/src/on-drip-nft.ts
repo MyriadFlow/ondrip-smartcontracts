@@ -7,6 +7,7 @@ import {
   // SubsTimeUpdated,
   Transfer,
   CredientialsUpdated,
+  SubsTimeUpdated,
 } from "../generated/OnDripNFT/OnDripNFT"
 import {
   SubToken,
@@ -40,14 +41,13 @@ export function handleSubscriptionUpdate(event: SubscriptionUpdate): void {
   }
 }
 
-// export function handleSubsTimeUpdated(event: SubsTimeUpdated): void {
-//   let token = SubToken.load(event.params._tokenID.toString());
-//   if (!token) {
-//     throw new Error("Token doesn't exist");
-//   }
-//   token.subsTime = event.params.credientials;
-//   token.save()
-// }
+export function handleSubsTimeUpdated(event: SubsTimeUpdated): void {
+  let token = SubToken.load(event.params.tokenId.toString());
+  if (token) {
+    token.subsTime = event.params.subscriptionTime;
+    token.save()
+  }
+}
 
 export function handleSubscriptionStatus(event: SubscriptionStatus): void {
   let token = SubToken.load(event.params._tokenID.toString());
