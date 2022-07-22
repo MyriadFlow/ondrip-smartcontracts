@@ -295,7 +295,7 @@
     ],
     "name": "accessToCredentials",
     "outputs": [{ "internalType": "bool", "name": "access", "type": "bool" }],
-    "stateMutability": "nonpayable",
+    "stateMutability": "view",
     "type": "function"
   },
   {

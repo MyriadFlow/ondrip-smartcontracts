@@ -904,40 +904,6 @@ export class ConstructorCall__Outputs {
   }
 }
 
-export class AccessToCredentialsCall extends ethereum.Call {
-  get inputs(): AccessToCredentialsCall__Inputs {
-    return new AccessToCredentialsCall__Inputs(this);
-  }
-
-  get outputs(): AccessToCredentialsCall__Outputs {
-    return new AccessToCredentialsCall__Outputs(this);
-  }
-}
-
-export class AccessToCredentialsCall__Inputs {
-  _call: AccessToCredentialsCall;
-
-  constructor(call: AccessToCredentialsCall) {
-    this._call = call;
-  }
-
-  get _tokenID(): BigInt {
-    return this._call.inputValues[0].value.toBigInt();
-  }
-}
-
-export class AccessToCredentialsCall__Outputs {
-  _call: AccessToCredentialsCall;
-
-  constructor(call: AccessToCredentialsCall) {
-    this._call = call;
-  }
-
-  get access(): boolean {
-    return this._call.outputValues[0].value.toBoolean();
-  }
-}
-
 export class ApproveCall extends ethereum.Call {
   get inputs(): ApproveCall__Inputs {
     return new ApproveCall__Inputs(this);
