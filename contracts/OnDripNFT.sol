@@ -22,6 +22,7 @@ contract OnDripNFT is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerable {
     address public s_contractOwner;
     address public s_nftMarketplace;
 
+    //payable
     struct cardAttributes {
         address payable accountOwner;
         string description;
@@ -29,7 +30,7 @@ contract OnDripNFT is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerable {
         uint256 rateAmount;
         uint256 renewalFee;
         uint256 subscriptionTime;
-        bytes32 credentials;
+        string credentials;
         bool cardValid;
     }
 
@@ -70,12 +71,13 @@ contract OnDripNFT is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerable {
         address indexed _renter,
         uint256 _tokenID,
         uint256 _hour,
+        uint256 _newTime,
         address indexed _receiver,
         uint256 _amount
     );
     event FundsWithdrawn(address indexed _from, address indexed _to);
-    event CredientialsUpdated(uint256 _tokenID, bytes32 credientials);
-    event SubsTimeUpdated(uint256 subscriptionTime);
+    event CredientialsUpdated(uint256 _tokenID, string credientials);
+    event SubsTimeUpdated(uint256 tokenId, uint256 subscriptionTime);
     modifier onlyOwner() {
         require(msg.sender == s_contractOwner);
         _;
@@ -84,10 +86,10 @@ contract OnDripNFT is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerable {
     //OPTIONAL MODIFIER
     modifier getTokeValid(uint256 _tokenID) {
         address renter = ownerOf(_tokenID);
-        if (s_cardAttributes[_tokenID].subscriptionTime <= block.timestamp) {
+        if (s_cardAttributes[_tokenID].subscriptionTime < block.timestamp) {
             s_cardAttributes[_tokenID].cardValid = false;
         } else if (
-            s_cardAttributes[_tokenID].subscriptionTime >= block.timestamp
+            s_cardAttributes[_tokenID].subscriptionTime > block.timestamp
         ) {
             s_cardAttributes[_tokenID].cardValid = true;
         }
@@ -113,7 +115,7 @@ contract OnDripNFT is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerable {
         _safeMint(msg.sender, tokenId);
 
         s_cardAttributes[tokenId] = cardAttributes({
-            accountOwner: payable(msg.sender),
+            accountOwner:payable(msg.sender),
             description: _description,
             imgURI: _vendorURI, //IPFS HASH
             rateAmount: _rateAmount,
@@ -139,20 +141,20 @@ contract OnDripNFT is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerable {
         return tokenId;
     }
 
-    function topUp(uint256 _tokenID) external payable {
+    //MODIFER ADDED TO CHECK IF TOKEN IS VALID BEFORE FUNCTION CALL
+    function topUp(uint256 _tokenID) external getTokeValid(_tokenID) payable {
         require(ownerOf(_tokenID) == msg.sender, "not owner");
-        require(
-            s_cardAttributes[_tokenID].cardValid == true,
-            "Card not active"
-        );
+        require(s_cardAttributes[_tokenID].cardValid == true, "Card not active");
+        require(msg.value >= s_cardAttributes[_tokenID].rateAmount, "too little payment");
+        require(msg.value >= s_cardAttributes[_tokenID].rateAmount * 3, "3 hour minimum");
 
         uint256 newTime = calculateSubscriptionTime(msg.value, _tokenID);
 
         if (newTime >= minInterval && newTime <= maxInterval) {
-            s_cardAttributes[_tokenID].subscriptionTime +=
+            s_cardAttributes[_tokenID].subscriptionTime =
                 block.timestamp +
                 newTime;
-            emit SubsTimeUpdated(_tokenID,s_cardAttributes[_tokenID].subscriptionTime);
+            emit SubsTimeUpdated(_tokenID, s_cardAttributes[_tokenID].subscriptionTime);
             address receiver = s_cardAttributes[_tokenID].accountOwner;
             (bool success, ) = receiver.call{value: msg.value}("");
             require(success, "Transfer failed");
@@ -165,18 +167,9 @@ contract OnDripNFT is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerable {
         internal
         returns (uint256)
     {
-        require(
-            _amount >= s_cardAttributes[_tokenID].rateAmount,
-            "too little payment"
-        );
-        require(
-            _amount >= s_cardAttributes[_tokenID].rateAmount * 3,
-            "3 hour minimum"
-        );
-
         address currentSub = ownerOf(_tokenID);
         uint256 hour = _amount / s_cardAttributes[_tokenID].rateAmount;
-        uint256 newTime = (hour * 60) * 60;
+        uint256 newTime = (hour * 60) * 60 / (10 ** 18);
 
         emit SubscriptionUpdate(
             currentSub,
@@ -191,9 +184,9 @@ contract OnDripNFT is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerable {
     }
 
     function renew(uint256 _tokenID) external payable {
-        require(s_cardAttributes[_tokenID].subscriptionTime <= block.timestamp);
+        require(s_cardAttributes[_tokenID].subscriptionTime <= block.timestamp, "still time left for subscription");
         require(ownerOf(_tokenID) == msg.sender, "not owner");
-        require(msg.value >= s_cardAttributes[_tokenID].renewalFee);
+        require(msg.value >= s_cardAttributes[_tokenID].renewalFee, "not enough for fee");
 
         address receiver = s_cardAttributes[_tokenID].accountOwner;
         (bool success, ) = receiver.call{value: msg.value}("");
@@ -256,7 +249,7 @@ contract OnDripNFT is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerable {
             );
     }
 
-    function updateTokenCredentials(bytes32 _credentials, uint256 _tokenId)
+    function updateTokenCredentials(string memory _credentials, uint256 _tokenId)
         external
         onlyOwner
     {
@@ -264,26 +257,25 @@ contract OnDripNFT is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerable {
         emit CredientialsUpdated(_tokenId, _credentials);
     }
 
+    //ACCESS CARD
     function accessToCredentials(uint256 _tokenID)
-        public
+        public view
         returns (bool access)
     {
-        if (s_cardAttributes[_tokenID].subscriptionTime > block.timestamp) {
-            s_cardAttributes[_tokenID].cardValid = true;
-            return true;
-        } else if (
-            s_cardAttributes[_tokenID].subscriptionTime <= block.timestamp
-        ) {
-            s_cardAttributes[_tokenID].cardValid = false;
-            return false;
-        }
+       if(s_cardAttributes[_tokenID].subscriptionTime > block.timestamp){
+           return true;
+       }
+       else if(s_cardAttributes[_tokenID].subscriptionTime < block.timestamp){
+           return false;
+       }
+        
     }
 
-    //GETTER FUNCTION IF NEEDED
+    //ACCESS STRING TOKEN CREDENTIALS 
     function getTokenCredentials(uint256 _tokenID)
         public
         view
-        returns (bytes32)
+        returns (string memory)
     {
         require(ownerOf(_tokenID) == msg.sender, "not owner");
         require(s_cardAttributes[_tokenID].subscriptionTime > block.timestamp);
@@ -339,5 +331,6 @@ contract OnDripNFT is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerable {
 
     function balanceOfContract() external view returns (uint256) {
         return address(this).balance;
-    }
+    }   
+        
 }
