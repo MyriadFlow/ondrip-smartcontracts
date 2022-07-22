@@ -145,9 +145,9 @@
       },
       {
         "indexed": false,
-        "internalType": "bytes32",
+        "internalType": "string",
         "name": "credientials",
-        "type": "bytes32"
+        "type": "string"
       }
     ],
     "name": "CredientialsUpdated",
@@ -456,9 +456,9 @@
     "name": "getTokenCredentials",
     "outputs": [
       {
-        "internalType": "bytes32",
+        "internalType": "string",
         "name": "",
-        "type": "bytes32"
+        "type": "string"
       }
     ],
     "stateMutability": "view",
@@ -876,9 +876,9 @@
   {
     "inputs": [
       {
-        "internalType": "bytes32",
+        "internalType": "string",
         "name": "_credentials",
-        "type": "bytes32"
+        "type": "string"
       },
       {
         "internalType": "uint256",

@@ -3,7 +3,7 @@ type SubToken @entity {
   createdAtTimestamp: BigInt!
   accountOwner: User!
   owner: User!
-  credientials: Bytes!
+  credientials: String!
   renewalFee: BigInt!
   rateAmount: BigInt!
   description: String!

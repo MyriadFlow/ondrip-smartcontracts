@@ -121,8 +121,8 @@ export class CredientialsUpdated__Params {
     return this._event.parameters[0].value.toBigInt();
   }
 
-  get credientials(): Bytes {
-    return this._event.parameters[1].value.toBytes();
+  get credientials(): string {
+    return this._event.parameters[1].value.toString();
   }
 }
 
@@ -472,27 +472,27 @@ export class OnDripNFT extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toAddress());
   }
 
-  getTokenCredentials(_tokenID: BigInt): Bytes {
+  getTokenCredentials(_tokenID: BigInt): string {
     let result = super.call(
       "getTokenCredentials",
-      "getTokenCredentials(uint256):(bytes32)",
+      "getTokenCredentials(uint256):(string)",
       [ethereum.Value.fromUnsignedBigInt(_tokenID)]
     );
 
-    return result[0].toBytes();
+    return result[0].toString();
   }
 
-  try_getTokenCredentials(_tokenID: BigInt): ethereum.CallResult<Bytes> {
+  try_getTokenCredentials(_tokenID: BigInt): ethereum.CallResult<string> {
     let result = super.tryCall(
       "getTokenCredentials",
-      "getTokenCredentials(uint256):(bytes32)",
+      "getTokenCredentials(uint256):(string)",
       [ethereum.Value.fromUnsignedBigInt(_tokenID)]
     );
     if (result.reverted) {
       return new ethereum.CallResult();
     }
     let value = result.value;
-    return ethereum.CallResult.fromValue(value[0].toBytes());
+    return ethereum.CallResult.fromValue(value[0].toString());
   }
 
   isApprovedForAll(owner: Address, operator: Address): boolean {
@@ -1247,8 +1247,8 @@ export class UpdateTokenCredentialsCall__Inputs {
     this._call = call;
   }
 
-  get _credentials(): Bytes {
-    return this._call.inputValues[0].value.toBytes();
+  get _credentials(): string {
+    return this._call.inputValues[0].value.toString();
   }
 
   get _tokenId(): BigInt {

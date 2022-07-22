@@ -6,9 +6,9 @@ dataSources:
     name: OnDripNFT
     network: mumbai
     source:
-      address: "0xf490aC66628eE9E7D5FA45c8073166C790951Bf7"
+      address: "0x52F00F0f4eFEcF708720eD8a7211ED0975eFf1CF"
       abi: OnDripNFT
-      startBlock: 27262881
+      startBlock: 27275048
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.5
@@ -34,7 +34,7 @@ dataSources:
           handler: handleSubscriptionUpdate
         - event: Transfer(indexed address,indexed address,indexed uint256)
           handler: handleTransfer
-        - event: CredientialsUpdated(uint256,bytes32)
+        - event: CredientialsUpdated(uint256,string)
           handler: handleCredientialsUpdated
         - event: SubsTimeUpdated(uint256,uint256)
           handler: handleSubsTimeUpdated

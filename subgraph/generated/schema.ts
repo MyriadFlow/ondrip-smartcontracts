@@ -69,13 +69,13 @@ export class SubToken extends Entity {
     this.set("owner", Value.fromString(value));
   }
 
-  get credientials(): Bytes {
+  get credientials(): string {
     let value = this.get("credientials");
-    return value!.toBytes();
+    return value!.toString();
   }
 
-  set credientials(value: Bytes) {
-    this.set("credientials", Value.fromBytes(value));
+  set credientials(value: string) {
+    this.set("credientials", Value.fromString(value));
   }
 
   get renewalFee(): BigInt {

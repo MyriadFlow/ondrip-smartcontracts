@@ -1,4 +1,4 @@
-import { BigInt, Bytes } from "@graphprotocol/graph-ts"
+import { BigInt, Bytes, log } from "@graphprotocol/graph-ts"
 import {
   AccountMinted,
   SubscriptionStatus,
@@ -68,9 +68,8 @@ export function handleAccountMinted(event: AccountMinted): void {
     token.rateAmount = event.params._rateAmount
     token.renewalFee = event.params.__renewalFee
     token.description = event.params._description
-    token.credientials = event.params._credentials
     token.subsTime = new BigInt(0);
-    token.credientials = new Bytes(1);
+    token.credientials = "";
     token.renewalFee = event.params.__renewalFee
     token.save()
     createUser(token.accountOwner)
@@ -80,7 +79,8 @@ export function handleAccountMinted(event: AccountMinted): void {
 export function handleCredientialsUpdated(event: CredientialsUpdated): void {
   let token = SubToken.load(event.params._tokenID.toString());
   if (!token) {
-    throw new Error("Token doesn't exist");
+    log.error("token with tokenId {} doesn't exist", [event.params._tokenID.toString()])
+    return
   }
   token.credientials = event.params.credientials;
   token.save()
