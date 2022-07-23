@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.0 <0.9.0;
-
+ 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/common/ERC2981.sol";
@@ -200,6 +200,8 @@ contract OnDripNFT is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerable {
             s_cardAttributes[_tokenID].accountOwner,
             s_cardAttributes[_tokenID].cardValid
         );
+
+        emit SubsTimeUpdated(_tokenID, s_cardAttributes[_tokenID].subscriptionTime);
     }
 
     function tokenURI(uint256 tokenId)
