@@ -472,6 +472,29 @@ export class OnDripNFT extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toAddress());
   }
 
+  getCurrentEpoch(): BigInt {
+    let result = super.call(
+      "getCurrentEpoch",
+      "getCurrentEpoch():(uint256)",
+      []
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_getCurrentEpoch(): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "getCurrentEpoch",
+      "getCurrentEpoch():(uint256)",
+      []
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
   getTokenCredentials(_tokenID: BigInt): string {
     let result = super.call(
       "getTokenCredentials",

@@ -6,7 +6,7 @@ dataSources:
     name: OnDripNFT
     network: mumbai
     source:
-      address: "0xF261AD3d4a8cc795AC5e2b9616566747b4BD1A72"
+      address: "0x151A0bbDC9926Fbe1Ba63d11EbC62E5eBd58Fc57"
       abi: OnDripNFT
       startBlock: 27300391
     mapping:
