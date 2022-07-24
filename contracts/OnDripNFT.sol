@@ -192,7 +192,7 @@ contract OnDripNFT is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerable {
         (bool success, ) = receiver.call{value: msg.value}("");
         require(success, "Transfer failed");
         s_cardAttributes[_tokenID].cardValid = true;
-        s_cardAttributes[_tokenID].subscriptionTime += block.timestamp + 10800;
+        s_cardAttributes[_tokenID].subscriptionTime = block.timestamp + 10800;
 
         emit SubscriptionStatus(
             msg.sender,
@@ -275,17 +275,11 @@ contract OnDripNFT is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerable {
 
     //ACCESS STRING TOKEN CREDENTIALS 
     function getTokenCredentials(uint256 _tokenID)
-        public
+        external
+        onlyOwner
         view
         returns (string memory)
     {
-        require(ownerOf(_tokenID) == msg.sender, "not owner");
-        require(s_cardAttributes[_tokenID].subscriptionTime > block.timestamp);
-        require(
-            s_cardAttributes[_tokenID].cardValid == true,
-            "Card not active"
-        );
-
         return s_cardAttributes[_tokenID].credentials;
     }
 
@@ -334,5 +328,10 @@ contract OnDripNFT is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerable {
     function balanceOfContract() external view returns (uint256) {
         return address(this).balance;
     }   
+    
+    function getCurrentEpoch() external view returns (uint256) {
+        return block.timestamp;
+    }   
+        
         
 }
