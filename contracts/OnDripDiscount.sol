@@ -10,8 +10,7 @@ import "@openzeppelin/contracts/utils/Base64.sol";
 
 error Payments__Failed();
 
-//we need  destroy after use method or a loses functionality after use 
-//we can either allow the merchant to customize how many uses the coupon gets or burn it - for th first one we could simply use a factory
+//coupon mint from the same contract
 
 contract OnDripNFTDiscount is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerable {
     using Counters for Counters.Counter;
@@ -21,7 +20,6 @@ contract OnDripNFTDiscount is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerabl
     address public s_contractOwner;
     address public s_nftMarketplace;
 
-    //payable
     struct cardAttributes {
         address payable accountOwner;
         string description;
@@ -58,8 +56,18 @@ contract OnDripNFTDiscount is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerabl
     event OwnershipTransferred(address indexed _from, address indexed _to);
     event FundsWithdrawn(address indexed _from, address indexed _to);
     event CredientialsUpdated(uint256 _tokenID, string credientials);
+    event UsesLeft(uint256 _tokenID, uint256 credientials);
+
     modifier onlyOwner() {
         require(msg.sender == s_contractOwner);
+        _;
+    }
+
+    modifier usesCalculator(uint256 _tokenId) {
+        require(msg.sender == s_contractOwner);
+
+        s_cardAttributes[_tokenId].uses = s_cardAttributes[_tokenId].uses - 1;
+
         _;
     }
 
@@ -124,10 +132,7 @@ contract OnDripNFTDiscount is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerabl
             '", "image": "',
             imageURI,
             // adding policyHolder
-            '", "attributes": [{"trait_type":"Top Off Rate",',
-            '"value":"',
-            uses,
-            '"}, {"trait_type": "Renewal Rate", ',
+            '", "attributes": [{"trait_type":"Uses",',
             '"value":"',
             uses,
             '"}]}'
@@ -142,6 +147,14 @@ contract OnDripNFTDiscount is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerabl
             );
     }
 
+    function calculateUses(uint256 _tokenID)
+        external
+        onlyOwner
+    {
+        s_cardAttributes[_tokenID].uses = s_cardAttributes[_tokenID].uses - 1;
+        emit UsesLeft(_tokenID, s_cardAttributes[_tokenID].uses);
+    }
+
     function updateTokenCredentials(string memory _discountCode, uint256 _tokenId)
         external
         onlyOwner
@@ -152,21 +165,16 @@ contract OnDripNFTDiscount is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerabl
 
     //ACCESS CARD
     function accessToCredentials(uint256 _tokenID)
-        public view
+        public
+        view
         returns (bool access)
     {
-       
-        
-    }
-
-    //ACCESS STRING TOKEN CREDENTIALS 
-    function getTokenCredentials(uint256 _tokenID)
-        external
-        onlyOwner
-        view
-        returns (string memory)
-    {
-        return s_cardAttributes[_tokenID].discountCode;
+       if(s_cardAttributes[_tokenID].uses > 0){
+           return true;
+       }
+       else if(s_cardAttributes[_tokenID].uses == 0){
+           return false;
+       }
     }
 
     //Possibly Functions For Encoding Or Decoding -- Might Change Password and Username To String  To String - Stringify
@@ -218,6 +226,5 @@ contract OnDripNFTDiscount is ERC721, ERC2981, ERC721URIStorage, ERC721Enumerabl
     function getCurrentEpoch() external view returns (uint256) {
         return block.timestamp;
     }   
-        
-        
+         
 }
