@@ -18,7 +18,7 @@ contract OnDripSaas is ERC721, ERC2981, ERC721URIStorage, AccessControlEnumerabl
     uint256 public immutable maxInterval = 15768000; //six months
     uint256 public immutable minInterval = 10800; //three hours
 
-    address public s_nftMarketplace;
+    bool public paused = false; // Switch critical funcs to be paused
 
     //payable
     struct cardAttributes {
@@ -36,27 +36,28 @@ contract OnDripSaas is ERC721, ERC2981, ERC721URIStorage, AccessControlEnumerabl
 
     Counters.Counter private _tokenIdCounter;
 
-    //ROLES //Shared pause mints and grant creator roles
+    //ROLES
     bytes32 public constant OPERATOR =
         keccak256("OPERATOR");
 
-    //Creator role mints the NFTS 
     bytes32 public constant CREATOR =
         keccak256("CREATOR");
 
-    //Owner is set in the mint function 
     bytes32 public constant OWNER =
         keccak256("OWNER");
 
     constructor(
         string memory _name,
         string memory _symbol,
-        address _contractOnwer,
+        address _platformAddress,
+        address _vendorAddress,
         address _nftMarketPlace, 
         uint96 _royaltyFeeBips
     ) ERC721(_name, _symbol) {
       
-        _grantRole(OPERATOR, _contractOnwer);
+        _grantRole(OPERATOR, _platformAddress);
+        _grantRole(OPERATOR, _vendorAddress);
+        _grantRole(OWNER, _vendorAddress);
         _setRoleAdmin(OPERATOR, OPERATOR);
         s_royaltyFeeBips = _royaltyFeeBips;
         setApprovalForAll(_nftMarketPlace, true); 
@@ -91,39 +92,20 @@ contract OnDripSaas is ERC721, ERC2981, ERC721URIStorage, AccessControlEnumerabl
     event CredientialsUpdated(uint256 _tokenID, string credientials);
     event SubsTimeUpdated(uint256 tokenId, uint256 subscriptionTime);
 
-    //OPTIONAL MODIFIER
-    modifier getTokeValid(uint256 _tokenID) {
-        address renter = ownerOf(_tokenID);
-        if (s_cardAttributes[_tokenID].subscriptionTime < block.timestamp) {
-            s_cardAttributes[_tokenID].cardValid = false;
-        } else if (
-            s_cardAttributes[_tokenID].subscriptionTime > block.timestamp
-        ) {
-            s_cardAttributes[_tokenID].cardValid = true;
-        }
-
-        emit SubscriptionStatus(
-            renter,
-            _tokenID,
-            s_cardAttributes[_tokenID].accountOwner,
-            s_cardAttributes[_tokenID].cardValid
-        );
-        _;
-    }
-
     function mint(
         string memory _vendorURI,
         string memory _description,
         uint256 _rateAmount,
         uint256 _renewalFee
-    ) external returns (uint256) {
+    ) external onlyRole(CREATOR) returns (uint256) {
+        require(!paused, "Contract is currently paused.");
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
 
         _safeMint(msg.sender, tokenId);
 
         s_cardAttributes[tokenId] = cardAttributes({
-            accountOwner:payable(msg.sender),
+            accountOwner: payable(msg.sender),
             description: _description,
             imgURI: _vendorURI, //IPFS HASH
             rateAmount: _rateAmount,
@@ -133,8 +115,6 @@ contract OnDripSaas is ERC721, ERC2981, ERC721URIStorage, AccessControlEnumerabl
             cardValid: false
         });
 
-        _grantRole(OWNER, msg.sender);
-        _grantRole(OPERATOR, msg.sender);
         _setTokenRoyalty(tokenId, msg.sender, s_royaltyFeeBips); //USER MAY SET THIER OWN ROYALTY
         _setTokenURI(tokenId, tokenURI(tokenId));
         emit AccountMinted(
@@ -150,8 +130,7 @@ contract OnDripSaas is ERC721, ERC2981, ERC721URIStorage, AccessControlEnumerabl
         return tokenId;
     }
 
-    //MODIFER ADDED TO CHECK IF TOKEN IS VALID BEFORE FUNCTION CALL
-    function topUp(uint256 _tokenID) external getTokeValid(_tokenID) payable {
+    function topUp(uint256 _tokenID) external payable {
         require(ownerOf(_tokenID) == msg.sender, "not owner");
         require(s_cardAttributes[_tokenID].cardValid == true, "Card not active");
         require(msg.value >= s_cardAttributes[_tokenID].rateAmount, "too little payment");
@@ -260,6 +239,14 @@ contract OnDripSaas is ERC721, ERC2981, ERC721URIStorage, AccessControlEnumerabl
             );
     }
 
+    function addToRole(address account) external onlyRole(OPERATOR) {
+        grantRole(CREATOR, account);
+    }
+
+    function setPaused(bool _paused) external onlyRole(OPERATOR) {
+        paused = _paused;
+    }
+
     function updateTokenCredentials(string memory _credentials, uint256 _tokenId)
         external
         onlyRole(OPERATOR)
@@ -279,7 +266,6 @@ contract OnDripSaas is ERC721, ERC2981, ERC721URIStorage, AccessControlEnumerabl
        else if(s_cardAttributes[_tokenID].subscriptionTime < block.timestamp){
            return false;
        }
-        
     }
 
     function supportsInterface(bytes4 interfaceId)
@@ -291,28 +277,11 @@ contract OnDripSaas is ERC721, ERC2981, ERC721URIStorage, AccessControlEnumerabl
         return super.supportsInterface(interfaceId);
     }
 
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 tokenId
-    ) internal override(ERC721) {
-        super._beforeTokenTransfer(from, to, tokenId);
-    }
-
     function _burn(uint256 tokenId)
         internal
         override(ERC721, ERC721URIStorage)
     {
         super._burn(tokenId);
     }
-
-    function balanceOfContract() external view returns (uint256) {
-        return address(this).balance;
-    }   
-    
-    function getCurrentEpoch() external view returns (uint256) {
-        return block.timestamp;
-    }   
-        
-        
+           
 }
