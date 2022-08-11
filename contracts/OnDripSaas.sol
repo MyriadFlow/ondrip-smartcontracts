@@ -8,8 +8,6 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/Base64.sol";
 
-error Payments__Failed();
-
 contract OnDripSaas is ERC721, ERC2981, ERC721URIStorage, AccessControlEnumerable {
     using Counters for Counters.Counter;
 
@@ -133,8 +131,7 @@ contract OnDripSaas is ERC721, ERC2981, ERC721URIStorage, AccessControlEnumerabl
     function topUp(uint256 _tokenID) external payable {
         require(ownerOf(_tokenID) == msg.sender, "not owner");
         require(s_cardAttributes[_tokenID].cardValid == true, "Card not active");
-        require(msg.value >= s_cardAttributes[_tokenID].rateAmount, "too little payment");
-        require(msg.value >= s_cardAttributes[_tokenID].rateAmount * 3, "3 hour minimum");
+        require(msg.value >= s_cardAttributes[_tokenID].rateAmount * 3, "too little payment");
 
         uint256 newTime = calculateSubscriptionTime(msg.value, _tokenID);
 
@@ -146,9 +143,7 @@ contract OnDripSaas is ERC721, ERC2981, ERC721URIStorage, AccessControlEnumerabl
             address receiver = s_cardAttributes[_tokenID].accountOwner;
             (bool success, ) = receiver.call{value: msg.value}("");
             require(success, "Transfer failed");
-        } else {
-            revert Payments__Failed();
-        }
+        } 
     }
 
     function calculateSubscriptionTime(uint256 _amount, uint256 _tokenID)
@@ -199,17 +194,12 @@ contract OnDripSaas is ERC721, ERC2981, ERC721URIStorage, AccessControlEnumerabl
         override(ERC721, ERC721URIStorage)
         returns (string memory)
     {
-        require(
-            _exists(tokenId),
-            "ERC721Metadata: URI query for nonexistent token"
-        );
 
         cardAttributes memory cardAttr = s_cardAttributes[tokenId];
 
         string memory imageURI = cardAttr.imgURI;
         string memory strRate = Strings.toString(cardAttr.rateAmount);
         string memory strFee = Strings.toString(cardAttr.renewalFee);
-        //string memory strSub = Strings.toString(cardAttr.subscriptionTime);
 
         bytes memory m1 = abi.encodePacked(
             '{"name":"',
