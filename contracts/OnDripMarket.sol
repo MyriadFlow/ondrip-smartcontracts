@@ -9,6 +9,7 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 contract OnDripMarket is ReentrancyGuard {
     using Counters for Counters.Counter;
     Counters.Counter private _itemIds;
+    Counters.Counter private _auctionIds;
     Counters.Counter private _itemsSold;
 
     uint96 public platformFeeBasisPoint;
@@ -36,9 +37,9 @@ contract OnDripMarket is ReentrancyGuard {
          bool deleted;
      }
      
-     mapping(uint256 => MarketItem) public idToMarketItem;
-     
-     event MarketItemCreated (
+    mapping(uint256 => MarketItem) public idToMarketItem;
+
+    event MarketItemCreated (
         uint indexed itemId,
         address indexed nftContract, 
         uint256 indexed tokenId,
@@ -58,8 +59,52 @@ contract OnDripMarket is ReentrancyGuard {
 
     event MarketItemRemoved(uint256 itemId);
 
-    //Modifers 
+    //Auction Events -- may be worth putting owner in her as well for royalty sake
+    struct AuctionItem{
+         uint itemId;
+         address nftContract;
+         uint256 tokenId;
+         address payable seller;
+         address highestBidder;
+         address owner;
+         uint256 highestBid;
+         uint endAt;
+         bool started;
+         bool ended;
+    }
+     
+    mapping(uint256 => AuctionItem) public idToAuctionItem;
+    mapping(address => uint) public bids;
+     
+     event AuctionItemCreated (
+        uint indexed itemId,
+        address indexed nftContract, 
+        uint256 indexed tokenId,
+        string metaDataURI,
+        address seller,
+        address highestBidder,
+        address owner,
+        uint256 highestBid,
+        uint endAt,
+        bool started,
+        bool ended
+     );
 
+    event Bid(address indexed sender, uint amount);
+     
+    event AuctionItemSold (
+         uint indexed itemId,
+         address indexed nftContract, 
+         uint indexed tokenId,
+         address winner,
+         uint highestBid 
+    );
+
+    event Withdraw(address indexed bidder, uint amount);
+
+    event Start();
+
+    //Modifers 
     modifier onlyOwner() {
         require(msg.sender == owner);
         _;
@@ -169,5 +214,112 @@ contract OnDripMarket is ReentrancyGuard {
             emit MarketItemSold(itemId, tokenId, msg.sender, price);
 
         }
-    
+
+    //AUCTION FUNCTIONS
+    function createAuctionItem(
+        address nftContract, //OPTIONAL IN CASE THERE ARE MULTIPLE SUB ITEMS
+        uint256 tokenId,
+        uint256 highestBid,
+        uint endTime
+        ) public onlyItemOwner(nftContract, tokenId) returns (uint256) {
+            require(highestBid > 0, "Price must be greater than 0");
+
+            _auctionIds.increment();
+            uint256 itemId = _auctionIds.current();
+
+            uint endAt = block.timestamp + endTime;
+  
+            idToAuctionItem[itemId] =  AuctionItem(
+                itemId,
+                nftContract,
+                tokenId,
+                payable(msg.sender),
+                payable(address(0)),
+                payable(address(0)),
+                highestBid,
+                endAt,
+                true,
+                false
+            );
+            
+            IERC721(nftContract).transferFrom(msg.sender, address(this), tokenId);
+            
+            string memory metadataURI = IERC721Metadata(nftContract).tokenURI(tokenId);
+                
+            emit AuctionItemCreated(
+                itemId,
+                nftContract,
+                tokenId,
+                metadataURI,
+                msg.sender,
+                address(0),
+                address(0),
+                highestBid,
+                endAt,
+                true,
+                false
+            );
+
+            emit Start();
+
+            return itemId;
+        }
+
+    //we havea system where we simply the highest bidder for the auction 
+    function bid(uint256 _itemId) public payable {
+        require(idToAuctionItem[_itemId].started, "not started");
+        require(block.timestamp < idToAuctionItem[_itemId].endAt, "ended");
+        require(msg.value > idToAuctionItem[_itemId].highestBid, "value < highest");
+
+        if (idToAuctionItem[_itemId].highestBidder != address(0)) {
+            bids[idToAuctionItem[_itemId].highestBidder] += idToAuctionItem[_itemId].highestBid;
+        }
+
+        idToAuctionItem[_itemId].highestBidder = msg.sender;
+        idToAuctionItem[_itemId].highestBid = msg.value;
+
+        emit Bid(msg.sender, msg.value);
+    }
+
+    function withdraw() public {
+        uint bal = bids[msg.sender];
+        bids[msg.sender] = 0;
+        payable(msg.sender).transfer(bal);
+
+        emit Withdraw(msg.sender, bal);
+    }
+
+    function end(uint256 _itemId) public {
+        require(idToAuctionItem[_itemId].started, "not started");
+        require(block.timestamp >= idToAuctionItem[_itemId].endAt, "not ended");
+        require(!idToAuctionItem[_itemId].ended, "ended");
+
+        idToAuctionItem[_itemId].ended = true;
+        if (idToAuctionItem[_itemId].highestBidder != address(0)) {
+
+            (address accountReceiver, uint256 royaltyAmount) = IERC2981(idToAuctionItem[_itemId].nftContract).royaltyInfo(idToAuctionItem[_itemId].tokenId, idToAuctionItem[_itemId].highestBid);
+            uint256 amountReceived = idToAuctionItem[_itemId].highestBid;
+            uint256 amountAfterRoyalty = amountReceived - royaltyAmount;
+            uint256 amountToMarketplace = (amountAfterRoyalty * platformFeeBasisPoint) /1000;
+            uint256 amountToSeller = amountAfterRoyalty - amountToMarketplace;
+
+            IERC721(idToAuctionItem[_itemId].nftContract).transferFrom(address(this), idToAuctionItem[_itemId].highestBidder, idToAuctionItem[_itemId].tokenId);
+
+            idToAuctionItem[_itemId].seller.transfer(amountToSeller);
+            payable(address(owner)).transfer(amountToMarketplace);
+            payable(address(accountReceiver)).transfer(royaltyAmount);
+           
+
+        } else {
+
+            IERC721(idToAuctionItem[_itemId].nftContract).transferFrom(address(this), idToAuctionItem[_itemId].seller, idToAuctionItem[_itemId].tokenId);
+        }
+        emit AuctionItemSold (
+            _itemId,
+            idToAuctionItem[_itemId].nftContract, 
+            idToAuctionItem[_itemId].tokenId,
+            idToAuctionItem[_itemId].highestBidder,
+            idToAuctionItem[_itemId].highestBid
+        );
+    }
 }
