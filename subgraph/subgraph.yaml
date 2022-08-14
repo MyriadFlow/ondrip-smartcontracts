@@ -14,14 +14,8 @@ dataSources:
       apiVersion: 0.0.5
       language: wasm/assemblyscript
       entities:
-        - AccountMinted
-        - Approval
-        - ApprovalForAll
-        - FundsWithdrawn
-        - OwnershipTransferred
-        - SubscriptionStatus
-        - SubscriptionUpdate
-        - Transfer
+        - User
+        - SubToken
       abis:
         - name: OnDripNFT
           file: ./abis/OnDripNFT.json
@@ -51,8 +45,9 @@ dataSources:
       apiVersion: 0.0.5
       language: wasm/assemblyscript
       entities:
-        - AccountMinted
-        - AuctionCreated
+        - User
+        - SubAuctionItem
+        - SubMarketItem
       abis:
         - name: OnDripMarketPlace
           file: ./abis/OnDripMarketPlace.json
