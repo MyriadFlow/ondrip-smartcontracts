@@ -183,6 +183,146 @@ export class User extends Entity {
   }
 }
 
+export class SubAuctionItem extends Entity {
+  constructor(id: string) {
+    super();
+    this.set("id", Value.fromString(id));
+  }
+
+  save(): void {
+    let id = this.get("id");
+    assert(id != null, "Cannot save SubAuctionItem entity without an ID");
+    if (id) {
+      assert(
+        id.kind == ValueKind.STRING,
+        `Entities of type SubAuctionItem must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
+      );
+      store.set("SubAuctionItem", id.toString(), this);
+    }
+  }
+
+  static load(id: string): SubAuctionItem | null {
+    return changetype<SubAuctionItem | null>(store.get("SubAuctionItem", id));
+  }
+
+  get id(): string {
+    let value = this.get("id");
+    return value!.toString();
+  }
+
+  set id(value: string) {
+    this.set("id", Value.fromString(value));
+  }
+
+  get nftContract(): Bytes {
+    let value = this.get("nftContract");
+    return value!.toBytes();
+  }
+
+  set nftContract(value: Bytes) {
+    this.set("nftContract", Value.fromBytes(value));
+  }
+
+  get owner(): Bytes {
+    let value = this.get("owner");
+    return value!.toBytes();
+  }
+
+  set owner(value: Bytes) {
+    this.set("owner", Value.fromBytes(value));
+  }
+
+  get seller(): Bytes {
+    let value = this.get("seller");
+    return value!.toBytes();
+  }
+
+  set seller(value: Bytes) {
+    this.set("seller", Value.fromBytes(value));
+  }
+
+  get token(): string {
+    let value = this.get("token");
+    return value!.toString();
+  }
+
+  set token(value: string) {
+    this.set("token", Value.fromString(value));
+  }
+
+  get sold(): boolean {
+    let value = this.get("sold");
+    return value!.toBoolean();
+  }
+
+  set sold(value: boolean) {
+    this.set("sold", Value.fromBoolean(value));
+  }
+
+  get createdAtTimestamp(): BigInt {
+    let value = this.get("createdAtTimestamp");
+    return value!.toBigInt();
+  }
+
+  set createdAtTimestamp(value: BigInt) {
+    this.set("createdAtTimestamp", Value.fromBigInt(value));
+  }
+
+  get metaDataUri(): string {
+    let value = this.get("metaDataUri");
+    return value!.toString();
+  }
+
+  set metaDataUri(value: string) {
+    this.set("metaDataUri", Value.fromString(value));
+  }
+
+  get ended(): boolean {
+    let value = this.get("ended");
+    return value!.toBoolean();
+  }
+
+  set ended(value: boolean) {
+    this.set("ended", Value.fromBoolean(value));
+  }
+
+  get highestBid(): BigInt {
+    let value = this.get("highestBid");
+    return value!.toBigInt();
+  }
+
+  set highestBid(value: BigInt) {
+    this.set("highestBid", Value.fromBigInt(value));
+  }
+
+  get highestBidder(): Bytes {
+    let value = this.get("highestBidder");
+    return value!.toBytes();
+  }
+
+  set highestBidder(value: Bytes) {
+    this.set("highestBidder", Value.fromBytes(value));
+  }
+
+  get started(): boolean {
+    let value = this.get("started");
+    return value!.toBoolean();
+  }
+
+  set started(value: boolean) {
+    this.set("started", Value.fromBoolean(value));
+  }
+
+  get endAt(): BigInt {
+    let value = this.get("endAt");
+    return value!.toBigInt();
+  }
+
+  set endAt(value: BigInt) {
+    this.set("endAt", Value.fromBigInt(value));
+  }
+}
+
 export class SubMarketItem extends Entity {
   constructor(id: string) {
     super();
@@ -266,15 +406,6 @@ export class SubMarketItem extends Entity {
 
   set token(value: string) {
     this.set("token", Value.fromString(value));
-  }
-
-  get forSale(): boolean {
-    let value = this.get("forSale");
-    return value!.toBoolean();
-  }
-
-  set forSale(value: boolean) {
-    this.set("forSale", Value.fromBoolean(value));
   }
 
   get createdAtTimestamp(): BigInt {

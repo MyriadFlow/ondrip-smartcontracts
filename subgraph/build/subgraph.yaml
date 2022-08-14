@@ -70,4 +70,15 @@ dataSources:
           handler: handleMarketItemSold
         - event: MarketItemRemoved(uint256)
           handler: handleMarketItemRemoved
+        - event: AuctionItemSold(indexed uint256,indexed address,indexed uint256,address,uint256)
+          handler: handleAuctionItemSold
+        - event: AuctionItemCreated(indexed uint256,indexed address,indexed
+            uint256,string,address,address,address,uint256,uint256,bool,bool)
+          handler: handleAuctionItemCreated
+        - event: Bid(indexed address,uint256)
+          handler: handleBid
+        - event: Start()
+          handler: handleStart
+        - event: Withdraw(indexed address,uint256)
+          handler: handleWithdraw
       file: OnDripMarketplace/OnDripMarketplace.wasm

@@ -45,20 +45,14 @@ dataSources:
     source:
       address: "0x3aEF3cA504496e000Fe2aa25F10b4aE34Decb04c"
       abi: OnDripMarketPlace
-      startBlock: 27262826
+      startBlock: 27608445
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.5
       language: wasm/assemblyscript
       entities:
         - AccountMinted
-        - Approval
-        - ApprovalForAll
-        - FundsWithdrawn
-        - OwnershipTransferred
-        - SubscriptionStatus
-        - SubscriptionUpdate
-        - Transfer
+        - AuctionCreated
       abis:
         - name: OnDripMarketPlace
           file: ./abis/OnDripMarketPlace.json
@@ -69,4 +63,13 @@ dataSources:
           handler: handleMarketItemSold
         - event: MarketItemRemoved(uint256)
           handler: handleMarketItemRemoved
+
+        - event: AuctionItemSold(indexed uint256,indexed address,indexed uint256,address,uint256)
+          handler: handleAuctionItemSold
+        - event: AuctionItemCreated(indexed uint256,indexed address,indexed uint256,string,address,address,address,uint256,uint256,bool,bool)
+          handler: handleAuctionItemCreated
+        - event: Bid(indexed address,uint256)
+          handler: handleBid
+        - event: Withdraw(indexed address,uint256)
+          handler: handleWithdraw
       file: ./src/on-drip-marketplace.ts

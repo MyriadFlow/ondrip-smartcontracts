@@ -10,6 +10,120 @@ import {
   BigInt
 } from "@graphprotocol/graph-ts";
 
+export class AuctionItemCreated extends ethereum.Event {
+  get params(): AuctionItemCreated__Params {
+    return new AuctionItemCreated__Params(this);
+  }
+}
+
+export class AuctionItemCreated__Params {
+  _event: AuctionItemCreated;
+
+  constructor(event: AuctionItemCreated) {
+    this._event = event;
+  }
+
+  get itemId(): BigInt {
+    return this._event.parameters[0].value.toBigInt();
+  }
+
+  get nftContract(): Address {
+    return this._event.parameters[1].value.toAddress();
+  }
+
+  get tokenId(): BigInt {
+    return this._event.parameters[2].value.toBigInt();
+  }
+
+  get metaDataURI(): string {
+    return this._event.parameters[3].value.toString();
+  }
+
+  get seller(): Address {
+    return this._event.parameters[4].value.toAddress();
+  }
+
+  get highestBidder(): Address {
+    return this._event.parameters[5].value.toAddress();
+  }
+
+  get owner(): Address {
+    return this._event.parameters[6].value.toAddress();
+  }
+
+  get highestBid(): BigInt {
+    return this._event.parameters[7].value.toBigInt();
+  }
+
+  get endAt(): BigInt {
+    return this._event.parameters[8].value.toBigInt();
+  }
+
+  get started(): boolean {
+    return this._event.parameters[9].value.toBoolean();
+  }
+
+  get ended(): boolean {
+    return this._event.parameters[10].value.toBoolean();
+  }
+}
+
+export class AuctionItemSold extends ethereum.Event {
+  get params(): AuctionItemSold__Params {
+    return new AuctionItemSold__Params(this);
+  }
+}
+
+export class AuctionItemSold__Params {
+  _event: AuctionItemSold;
+
+  constructor(event: AuctionItemSold) {
+    this._event = event;
+  }
+
+  get itemId(): BigInt {
+    return this._event.parameters[0].value.toBigInt();
+  }
+
+  get nftContract(): Address {
+    return this._event.parameters[1].value.toAddress();
+  }
+
+  get tokenId(): BigInt {
+    return this._event.parameters[2].value.toBigInt();
+  }
+
+  get winner(): Address {
+    return this._event.parameters[3].value.toAddress();
+  }
+
+  get highestBid(): BigInt {
+    return this._event.parameters[4].value.toBigInt();
+  }
+}
+
+export class Bid extends ethereum.Event {
+  get params(): Bid__Params {
+    return new Bid__Params(this);
+  }
+}
+
+export class Bid__Params {
+  _event: Bid;
+
+  constructor(event: Bid) {
+    this._event = event;
+  }
+
+  get sender(): Address {
+    return this._event.parameters[0].value.toAddress();
+  }
+
+  get amount(): BigInt {
+    return this._event.parameters[1].value.toBigInt();
+  }
+}
+
 export class MarketItemCreated extends ethereum.Event {
   get params(): MarketItemCreated__Params {
     return new MarketItemCreated__Params(this);
@@ -104,6 +218,134 @@ export class MarketItemSold__Params {
   }
 }
 
+export class Start extends ethereum.Event {
+  get params(): Start__Params {
+    return new Start__Params(this);
+  }
+}
+
+export class Start__Params {
+  _event: Start;
+
+  constructor(event: Start) {
+    this._event = event;
+  }
+}
+
+export class Withdraw extends ethereum.Event {
+  get params(): Withdraw__Params {
+    return new Withdraw__Params(this);
+  }
+}
+
+export class Withdraw__Params {
+  _event: Withdraw;
+
+  constructor(event: Withdraw) {
+    this._event = event;
+  }
+
+  get bidder(): Address {
+    return this._event.parameters[0].value.toAddress();
+  }
+
+  get amount(): BigInt {
+    return this._event.parameters[1].value.toBigInt();
+  }
+}
+
+export class OnDripMarketPlace__idToAuctionItemResult {
+  value0: BigInt;
+  value1: Address;
+  value2: BigInt;
+  value3: Address;
+  value4: Address;
+  value5: Address;
+  value6: BigInt;
+  value7: BigInt;
+  value8: boolean;
+  value9: boolean;
+
+  constructor(
+    value0: BigInt,
+    value1: Address,
+    value2: BigInt,
+    value3: Address,
+    value4: Address,
+    value5: Address,
+    value6: BigInt,
+    value7: BigInt,
+    value8: boolean,
+    value9: boolean
+  ) {
+    this.value0 = value0;
+    this.value1 = value1;
+    this.value2 = value2;
+    this.value3 = value3;
+    this.value4 = value4;
+    this.value5 = value5;
+    this.value6 = value6;
+    this.value7 = value7;
+    this.value8 = value8;
+    this.value9 = value9;
+  }
+
+  toMap(): TypedMap<string, ethereum.Value> {
+    let map = new TypedMap<string, ethereum.Value>();
+    map.set("value0", ethereum.Value.fromUnsignedBigInt(this.value0));
+    map.set("value1", ethereum.Value.fromAddress(this.value1));
+    map.set("value2", ethereum.Value.fromUnsignedBigInt(this.value2));
+    map.set("value3", ethereum.Value.fromAddress(this.value3));
+    map.set("value4", ethereum.Value.fromAddress(this.value4));
+    map.set("value5", ethereum.Value.fromAddress(this.value5));
+    map.set("value6", ethereum.Value.fromUnsignedBigInt(this.value6));
+    map.set("value7", ethereum.Value.fromUnsignedBigInt(this.value7));
+    map.set("value8", ethereum.Value.fromBoolean(this.value8));
+    map.set("value9", ethereum.Value.fromBoolean(this.value9));
+    return map;
+  }
+
+  getItemId(): BigInt {
+    return this.value0;
+  }
+
+  getNftContract(): Address {
+    return this.value1;
+  }
+
+  getTokenId(): BigInt {
+    return this.value2;
+  }
+
+  getSeller(): Address {
+    return this.value3;
+  }
+
+  getHighestBidder(): Address {
+    return this.value4;
+  }
+
+  getOwner(): Address {
+    return this.value5;
+  }
+
+  getHighestBid(): BigInt {
+    return this.value6;
+  }
+
+  getEndAt(): BigInt {
+    return this.value7;
+  }
+
+  getStarted(): boolean {
+    return this.value8;
+  }
+
+  getEnded(): boolean {
+    return this.value9;
+  }
+}
+
 export class OnDripMarketPlace__idToMarketItemResult {
   value0: BigInt;
   value1: Address;
@@ -185,6 +427,68 @@ export class OnDripMarketPlace extends ethereum.SmartContract {
     return new OnDripMarketPlace("OnDripMarketPlace", address);
   }
 
+  bids(param0: Address): BigInt {
+    let result = super.call("bids", "bids(address):(uint256)", [
+      ethereum.Value.fromAddress(param0)
+    ]);
+
+    return result[0].toBigInt();
+  }
+
+  try_bids(param0: Address): ethereum.CallResult<BigInt> {
+    let result = super.tryCall("bids", "bids(address):(uint256)", [
+      ethereum.Value.fromAddress(param0)
+    ]);
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  createAuctionItem(
+    nftContract: Address,
+    tokenId: BigInt,
+    highestBid: BigInt,
+    endTime: BigInt
+  ): BigInt {
+    let result = super.call(
+      "createAuctionItem",
+      "createAuctionItem(address,uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromAddress(nftContract),
+        ethereum.Value.fromUnsignedBigInt(tokenId),
+        ethereum.Value.fromUnsignedBigInt(highestBid),
+        ethereum.Value.fromUnsignedBigInt(endTime)
+      ]
+    );
+
+    return result[0].toBigInt();
+  }
+
+  try_createAuctionItem(
+    nftContract: Address,
+    tokenId: BigInt,
+    highestBid: BigInt,
+    endTime: BigInt
+  ): ethereum.CallResult<BigInt> {
+    let result = super.tryCall(
+      "createAuctionItem",
+      "createAuctionItem(address,uint256,uint256,uint256):(uint256)",
+      [
+        ethereum.Value.fromAddress(nftContract),
+        ethereum.Value.fromUnsignedBigInt(tokenId),
+        ethereum.Value.fromUnsignedBigInt(highestBid),
+        ethereum.Value.fromUnsignedBigInt(endTime)
+      ]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
   createMarketItem(
     nftContract: Address,
     tokenId: BigInt,
@@ -222,6 +526,55 @@ export class OnDripMarketPlace extends ethereum.SmartContract {
     }
     let value = result.value;
     return ethereum.CallResult.fromValue(value[0].toBigInt());
+  }
+
+  idToAuctionItem(param0: BigInt): OnDripMarketPlace__idToAuctionItemResult {
+    let result = super.call(
+      "idToAuctionItem",
+      "idToAuctionItem(uint256):(uint256,address,uint256,address,address,address,uint256,uint256,bool,bool)",
+      [ethereum.Value.fromUnsignedBigInt(param0)]
+    );
+
+    return new OnDripMarketPlace__idToAuctionItemResult(
+      result[0].toBigInt(),
+      result[1].toAddress(),
+      result[2].toBigInt(),
+      result[3].toAddress(),
+      result[4].toAddress(),
+      result[5].toAddress(),
+      result[6].toBigInt(),
+      result[7].toBigInt(),
+      result[8].toBoolean(),
+      result[9].toBoolean()
+    );
+  }
+
+  try_idToAuctionItem(
+    param0: BigInt
+  ): ethereum.CallResult<OnDripMarketPlace__idToAuctionItemResult> {
+    let result = super.tryCall(
+      "idToAuctionItem",
+      "idToAuctionItem(uint256):(uint256,address,uint256,address,address,address,uint256,uint256,bool,bool)",
+      [ethereum.Value.fromUnsignedBigInt(param0)]
+    );
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(
+      new OnDripMarketPlace__idToAuctionItemResult(
+        value[0].toBigInt(),
+        value[1].toAddress(),
+        value[2].toBigInt(),
+        value[3].toAddress(),
+        value[4].toAddress(),
+        value[5].toAddress(),
+        value[6].toBigInt(),
+        value[7].toBigInt(),
+        value[8].toBoolean(),
+        value[9].toBoolean()
+      )
+    );
   }
 
   idToMarketItem(param0: BigInt): OnDripMarketPlace__idToMarketItemResult {
@@ -342,6 +695,82 @@ export class ConstructorCall__Outputs {
   }
 }
 
+export class BidCall extends ethereum.Call {
+  get inputs(): BidCall__Inputs {
+    return new BidCall__Inputs(this);
+  }
+
+  get outputs(): BidCall__Outputs {
+    return new BidCall__Outputs(this);
+  }
+}
+
+export class BidCall__Inputs {
+  _call: BidCall;
+
+  constructor(call: BidCall) {
+    this._call = call;
+  }
+
+  get _itemId(): BigInt {
+    return this._call.inputValues[0].value.toBigInt();
+  }
+}
+
+export class BidCall__Outputs {
+  _call: BidCall;
+
+  constructor(call: BidCall) {
+    this._call = call;
+  }
+}
+
+export class CreateAuctionItemCall extends ethereum.Call {
+  get inputs(): CreateAuctionItemCall__Inputs {
+    return new CreateAuctionItemCall__Inputs(this);
+  }
+
+  get outputs(): CreateAuctionItemCall__Outputs {
+    return new CreateAuctionItemCall__Outputs(this);
+  }
+}
+
+export class CreateAuctionItemCall__Inputs {
+  _call: CreateAuctionItemCall;
+
+  constructor(call: CreateAuctionItemCall) {
+    this._call = call;
+  }
+
+  get nftContract(): Address {
+    return this._call.inputValues[0].value.toAddress();
+  }
+
+  get tokenId(): BigInt {
+    return this._call.inputValues[1].value.toBigInt();
+  }
+
+  get highestBid(): BigInt {
+    return this._call.inputValues[2].value.toBigInt();
+  }
+
+  get endTime(): BigInt {
+    return this._call.inputValues[3].value.toBigInt();
+  }
+}
+
+export class CreateAuctionItemCall__Outputs {
+  _call: CreateAuctionItemCall;
+
+  constructor(call: CreateAuctionItemCall) {
+    this._call = call;
+  }
+
+  get value0(): BigInt {
+    return this._call.outputValues[0].value.toBigInt();
+  }
+}
+
 export class CreateMarketItemCall extends ethereum.Call {
   get inputs(): CreateMarketItemCall__Inputs {
     return new CreateMarketItemCall__Inputs(this);
@@ -414,6 +843,36 @@ export class CreateMarketSaleCall__Outputs {
   }
 }
 
+export class EndCall extends ethereum.Call {
+  get inputs(): EndCall__Inputs {
+    return new EndCall__Inputs(this);
+  }
+
+  get outputs(): EndCall__Outputs {
+    return new EndCall__Outputs(this);
+  }
+}
+
+export class EndCall__Inputs {
+  _call: EndCall;
+
+  constructor(call: EndCall) {
+    this._call = call;
+  }
+
+  get _itemId(): BigInt {
+    return this._call.inputValues[0].value.toBigInt();
+  }
+}
+
+export class EndCall__Outputs {
+  _call: EndCall;
+
+  constructor(call: EndCall) {
+    this._call = call;
+  }
+}
+
 export class RemoveFromSaleCall extends ethereum.Call {
   get inputs(): RemoveFromSaleCall__Inputs {
     return new RemoveFromSaleCall__Inputs(this);
@@ -440,6 +899,32 @@ export class RemoveFromSaleCall__Outputs {
   _call: RemoveFromSaleCall;
 
   constructor(call: RemoveFromSaleCall) {
+    this._call = call;
+  }
+}
+
+export class WithdrawCall extends ethereum.Call {
+  get inputs(): WithdrawCall__Inputs {
+    return new WithdrawCall__Inputs(this);
+  }
+
+  get outputs(): WithdrawCall__Outputs {
+    return new WithdrawCall__Outputs(this);
+  }
+}
+
+export class WithdrawCall__Inputs {
+  _call: WithdrawCall;
+
+  constructor(call: WithdrawCall) {
+    this._call = call;
+  }
+}
+
+export class WithdrawCall__Outputs {
+  _call: WithdrawCall;
+
+  constructor(call: WithdrawCall) {
     this._call = call;
   }
 }

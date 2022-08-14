@@ -18,6 +18,21 @@ type User @entity {
   created: [SubToken!]! @derivedFrom(field: "accountOwner")
 }
 
+type SubAuctionItem @entity {
+  id: ID!
+  nftContract: Bytes! # address
+  owner: Bytes!
+  seller: Bytes!
+  token: SubToken!
+  sold: Boolean!
+  createdAtTimestamp: BigInt!
+  metaDataUri: String!
+  ended: Boolean!
+  highestBid: BigInt!
+  highestBidder: Bytes!
+  started: Boolean!
+  endAt: BigInt!
+}
 type SubMarketItem @entity {
   id: ID!
   itemId: BigInt! # uint256
@@ -26,7 +41,6 @@ type SubMarketItem @entity {
   price: BigInt!
   seller: Bytes!
   token: SubToken!
-  forSale: Boolean!
   createdAtTimestamp: BigInt!
   metaDataUri: String!
   sold: Boolean!
