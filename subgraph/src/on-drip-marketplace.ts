@@ -89,17 +89,13 @@ export function handleAuctionItemSold(event: AuctionItemSold): void {
     auctionItem.save()
 }
 
-// export function handleBid(event: Bid): void {
-//     let auctionItem = SubAuctionItem.load(event.params.itemId.toString())
-//     if (!auctionItem) {
-//         log.error("auction item with itemId {} doesn't exist", [event.params.itemId.toString()])
-//         return
-//     }
-//     auctionItem.highestBid = event.params.amount;
-//     auctionItem.highestBidder = event.params.sender;
-//     auctionItem.save()
-// }
-
-// export function handleWithdraw(event: Withdraw): void {
-//     event.params.amount
-// }
+export function handleBid(event: Bid): void {
+    let auctionItem = SubAuctionItem.load(event.params.itemid.toString())
+    if (!auctionItem) {
+        log.error("auction item with itemId {} doesn't exist", [event.params.itemid.toString()])
+        return
+    }
+    auctionItem.highestBid = event.params.amount;
+    auctionItem.highestBidder = event.params.sender;
+    auctionItem.save()
+}
