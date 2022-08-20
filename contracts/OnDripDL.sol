@@ -12,8 +12,8 @@ import "@openzeppelin/contracts/utils/Base64.sol";
 contract OnDripDL is ERC721, ERC2981, ERC721URIStorage, AccessControlEnumerable {
     using Counters for Counters.Counter;
 
-    uint96 s_royaltyFeeBips;
-    bool public paused = false; // Switch critical funcs to be paused
+    uint96 royaltyFeeBips = 2;
+    bool public paused = false; 
 
     struct cardAttributes {
         address payable accountOwner;
@@ -34,6 +34,9 @@ contract OnDripDL is ERC721, ERC2981, ERC721URIStorage, AccessControlEnumerable 
     bytes32 public constant CREATOR =
         keccak256("CREATOR");
 
+    bytes32 public constant PLATFORM =
+        keccak256("PLATFORM");
+
     bytes32 public constant OWNER =
         keccak256("OWNER");
 
@@ -42,15 +45,18 @@ contract OnDripDL is ERC721, ERC2981, ERC721URIStorage, AccessControlEnumerable 
         string memory _symbol,
         address _platformAddress,
         address _vendorAddress,
-        address _nftMarketPlace,
-        uint96 _royaltyFeeBips
+        address _nftMarketPlace
     ) ERC721(_name, _symbol) {
+        _grantRole(PLATFORM, _platformAddress);
         _grantRole(OPERATOR, _platformAddress);
         _grantRole(OPERATOR, _vendorAddress);
         _grantRole(OWNER, _vendorAddress);
         _setRoleAdmin(OPERATOR, OPERATOR);
-        s_royaltyFeeBips = _royaltyFeeBips;
         setApprovalForAll(_nftMarketPlace, true); 
+    }
+
+    function setRoylatyFee(uint96 _roylaty) public onlyRole(PLATFORM) {
+        royaltyFeeBips = _roylaty;
     }
 
     //EVENTS
@@ -67,8 +73,10 @@ contract OnDripDL is ERC721, ERC2981, ERC721URIStorage, AccessControlEnumerable 
     event UsesLeft(uint256 _tokenID, uint256 credientials);
 
     function mint(
+
         string memory _saasURI,
         string memory _description
+
     ) external onlyRole(CREATOR) returns (uint256) {
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
@@ -83,7 +91,7 @@ contract OnDripDL is ERC721, ERC2981, ERC721URIStorage, AccessControlEnumerable 
             cardValid: false
         });
 
-        _setTokenRoyalty(tokenId, msg.sender, s_royaltyFeeBips); //USER MAY SET THIER OWN ROYALTY
+        _setTokenRoyalty(tokenId, msg.sender, royaltyFeeBips); //USER MAY SET THIER OWN ROYALTY
         _setTokenURI(tokenId, tokenURI(tokenId));
         emit AccountMinted(
             msg.sender,
@@ -148,15 +156,6 @@ contract OnDripDL is ERC721, ERC2981, ERC721URIStorage, AccessControlEnumerable 
     function setPaused(bool _paused) external onlyRole(OPERATOR) {
         paused = _paused;
     }
-
-    //ACCESS CARD use once 
-    //function accessToCredentials(uint256 _tokenID)
-        //public
-        //view
-        //returns (bool access)
-    //{
-       
-    //}
 
     function supportsInterface(bytes4 interfaceId)
         public

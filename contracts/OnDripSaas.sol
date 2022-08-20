@@ -11,12 +11,12 @@ import "@openzeppelin/contracts/utils/Base64.sol";
 contract OnDripSaas is ERC721, ERC2981, ERC721URIStorage, AccessControlEnumerable {
     using Counters for Counters.Counter;
 
-    uint96 s_royaltyFeeBips;
+    uint96 royaltyFeeBips = 2;
 
     uint256 public immutable maxInterval = 15768000; //six months
     uint256 public immutable minInterval = 10800; //three hours
 
-    bool public paused = false; // Switch critical funcs to be paused
+    bool public paused = false; 
 
     //payable
     struct cardAttributes {
@@ -38,6 +38,9 @@ contract OnDripSaas is ERC721, ERC2981, ERC721URIStorage, AccessControlEnumerabl
     bytes32 public constant OPERATOR =
         keccak256("OPERATOR");
 
+    bytes32 public constant PLATFORM =
+        keccak256("PLATFORM");
+
     bytes32 public constant CREATOR =
         keccak256("CREATOR");
 
@@ -49,16 +52,21 @@ contract OnDripSaas is ERC721, ERC2981, ERC721URIStorage, AccessControlEnumerabl
         string memory _symbol,
         address _platformAddress,
         address _vendorAddress,
-        address _nftMarketPlace, 
-        uint96 _royaltyFeeBips
+        address _nftMarketPlace
+
     ) ERC721(_name, _symbol) {
       
+        _grantRole(PLATFORM, _platformAddress);
         _grantRole(OPERATOR, _platformAddress);
         _grantRole(OPERATOR, _vendorAddress);
         _grantRole(OWNER, _vendorAddress);
         _setRoleAdmin(OPERATOR, OPERATOR);
-        s_royaltyFeeBips = _royaltyFeeBips;
         setApprovalForAll(_nftMarketPlace, true); 
+
+    }
+
+    function setRoylatyFee(uint96 _royaltyFee) public onlyRole(PLATFORM) {
+        royaltyFeeBips = _royaltyFee;
     }
 
     //EVENTS
@@ -95,7 +103,7 @@ contract OnDripSaas is ERC721, ERC2981, ERC721URIStorage, AccessControlEnumerabl
         string memory _description,
         uint256 _rateAmount,
         uint256 _renewalFee
-    ) external onlyRole(CREATOR) returns (uint256) {
+    ) public onlyRole(CREATOR) returns (uint256) {
         require(!paused, "Contract is currently paused.");
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
@@ -113,7 +121,7 @@ contract OnDripSaas is ERC721, ERC2981, ERC721URIStorage, AccessControlEnumerabl
             cardValid: false
         });
 
-        _setTokenRoyalty(tokenId, msg.sender, s_royaltyFeeBips); //USER MAY SET THIER OWN ROYALTY
+        _setTokenRoyalty(tokenId, msg.sender, royaltyFeeBips); //USER MAY SET THIER OWN ROYALTY
         _setTokenURI(tokenId, tokenURI(tokenId));
         emit AccountMinted(
             msg.sender,
@@ -273,5 +281,5 @@ contract OnDripSaas is ERC721, ERC2981, ERC721URIStorage, AccessControlEnumerabl
     {
         super._burn(tokenId);
     }
-           
+
 }
